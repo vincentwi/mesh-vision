@@ -28,6 +28,7 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 import traceback
 import urllib.error
 import urllib.request
@@ -37,7 +38,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import uvicorn
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -204,6 +205,162 @@ def get_active_users() -> List[Dict[str, Any]]:
 
 # Camera heading reset command flag
 _camera_reset_heading = False
+
+# ---------------------------------------------------------------------------
+# Mapping mode state
+# ---------------------------------------------------------------------------
+SCANS_DIR = BACKEND_DIR / "scans"
+SCANS_DIR.mkdir(parents=True, exist_ok=True)
+MAP_DATA_PATH = BACKEND_DIR / "map_data.json"
+
+_mapping_active = False
+_mapping_session_id = ""  # type: str
+_mapping_start_time = 0.0  # type: float
+_mapping_scans = []  # type: List[Dict[str, Any]]
+_mapping_markers = []  # type: List[Dict[str, Any]]
+_mapping_results = {}  # type: Dict[str, Any]
+_mapping_lock = threading.Lock()
+
+
+def _rssi_to_distance(rssi, tx_power=-30, path_loss_exp=3.0):
+    # type: (float, float, float) -> float
+    """Log-distance path-loss model: RSSI -> estimated metres."""
+    if rssi >= tx_power:
+        return 0.5
+    return 10.0 ** ((tx_power - rssi) / (10.0 * path_loss_exp))
+
+
+def _trilaterate_ap(positions):
+    # type: (List[Tuple[float, float, float]]) -> Tuple[float, float]
+    """Given list of (x, y, distance), estimate AP position via weighted centroid.
+
+    Uses inverse-distance weighting rather than full least-squares
+    for robustness with noisy RSSI-derived distances.
+    """
+    total_w = 0.0
+    wx = 0.0
+    wy = 0.0
+    for x, y, d in positions:
+        w = 1.0 / max(d, 0.1)
+        wx += x * w
+        wy += y * w
+        total_w += w
+    if total_w == 0:
+        return (0.0, 0.0)
+    return (round(wx / total_w, 2), round(wy / total_w, 2))
+
+
+def _compute_mapping_results(scans, markers):
+    # type: (List[Dict[str, Any]], List[Dict[str, Any]]) -> Dict[str, Any]
+    """Post-process mapping session: trilaterate APs, detect motion zones."""
+    # Build per-AP observations: {bssid: [(x, y, rssi, timestamp), ...]}
+    ap_obs = defaultdict(list)  # type: Dict[str, List[Tuple[float, float, float, float]]]
+
+    # Build a timeline of marker positions so we can interpolate position at scan time
+    if not markers:
+        return {"aps": [], "motion_zones": [], "note": "No position markers recorded"}
+
+    # Sort markers by timestamp
+    sorted_markers = sorted(markers, key=lambda m: m.get("timestamp", 0))
+
+    def _interp_pos(ts):
+        # type: (float) -> Tuple[float, float]
+        """Interpolate (x, y) at a given timestamp from marker list."""
+        if len(sorted_markers) == 1:
+            return (sorted_markers[0]["x"], sorted_markers[0]["y"])
+        # Find surrounding markers
+        for i in range(len(sorted_markers) - 1):
+            m0 = sorted_markers[i]
+            m1 = sorted_markers[i + 1]
+            if m0["timestamp"] <= ts <= m1["timestamp"]:
+                dt = m1["timestamp"] - m0["timestamp"]
+                if dt == 0:
+                    return (m0["x"], m0["y"])
+                frac = (ts - m0["timestamp"]) / dt
+                x = m0["x"] + frac * (m1["x"] - m0["x"])
+                y = m0["y"] + frac * (m1["y"] - m0["y"])
+                return (round(x, 2), round(y, 2))
+        # Outside range -> clamp to nearest
+        if ts < sorted_markers[0]["timestamp"]:
+            return (sorted_markers[0]["x"], sorted_markers[0]["y"])
+        return (sorted_markers[-1]["x"], sorted_markers[-1]["y"])
+
+    # Collect per-AP observations
+    for scan_entry in scans:
+        ts = scan_entry.get("timestamp", 0)
+        pos = _interp_pos(ts)
+        for ap in scan_entry.get("wifi", []):
+            bssid = ap.get("bssid", "")
+            if not bssid:
+                continue
+            rssi = ap.get("rssi", -100)
+            ap_obs[bssid].append((pos[0], pos[1], rssi, ts))
+
+    # Trilaterate each AP
+    ap_results = []
+    motion_zones = []
+
+    for bssid, obs_list in ap_obs.items():
+        if len(obs_list) < 2:
+            continue
+
+        # Get SSID and channel from first observation
+        ssid = ""
+        channel = 0
+        for scan_entry in scans:
+            for ap in scan_entry.get("wifi", []):
+                if ap.get("bssid") == bssid:
+                    ssid = ap.get("ssid", "")
+                    channel = ap.get("channel", 0)
+                    break
+            if ssid:
+                break
+
+        # Find top 3 strongest RSSI readings
+        sorted_obs = sorted(obs_list, key=lambda o: o[2], reverse=True)
+        top3 = sorted_obs[:3]
+
+        # Build (x, y, distance) tuples for trilateration
+        positions = []
+        for ox, oy, rssi, _ in top3:
+            d = _rssi_to_distance(rssi)
+            positions.append((ox, oy, d))
+
+        est_x, est_y = _trilaterate_ap(positions)
+
+        # Compute RSSI variance to detect motion zones
+        rssi_values = [o[2] for o in obs_list]
+        rssi_mean = sum(rssi_values) / len(rssi_values)
+        rssi_var = sum((r - rssi_mean) ** 2 for r in rssi_values) / len(rssi_values)
+        high_variance = rssi_var > 25.0  # threshold for motion detection
+
+        ap_results.append({
+            "bssid": bssid,
+            "ssid": ssid,
+            "channel": channel,
+            "estimated_x": est_x,
+            "estimated_y": est_y,
+            "rssi_mean": round(rssi_mean, 1),
+            "rssi_variance": round(rssi_var, 2),
+            "observation_count": len(obs_list),
+            "high_variance": high_variance,
+        })
+
+        if high_variance:
+            motion_zones.append({
+                "bssid": bssid,
+                "ssid": ssid,
+                "estimated_x": est_x,
+                "estimated_y": est_y,
+                "rssi_variance": round(rssi_var, 2),
+            })
+
+    return {
+        "aps": ap_results,
+        "motion_zones": motion_zones,
+        "marker_count": len(markers),
+        "scan_count": len(scans),
+    }
 
 
 # ===================================================================
@@ -844,6 +1001,19 @@ def wifi_scan_loop() -> None:
             else:
                 results = _scan_wifi_system_profiler()
             wifi_results = results
+            # Record scan for mapping mode if active
+            if _mapping_active:
+                with _camera_heading_lock:
+                    heading_snap = _camera_cumulative_yaw
+                scan_record = {
+                    "timestamp": time.time(),
+                    "heading": round(heading_snap % 360, 2),
+                    "wifi": [{"ssid": r.get("ssid", ""), "bssid": r.get("bssid", ""),
+                              "rssi": r.get("rssi", -100), "channel": r.get("channel", 0)}
+                             for r in results],
+                }
+                with _mapping_lock:
+                    _mapping_scans.append(scan_record)
             if env_mapper is not None:
                 try:
                     env_mapper.ingest_scan(results)
@@ -1731,6 +1901,213 @@ async def api_peers() -> JSONResponse:
                 "hops": info.get("hops", -1),
             })
     return JSONResponse(content={"peers": peers})
+
+
+# ---------------------------------------------------------------------------
+# ── Mapping Mode Endpoints ──
+# ---------------------------------------------------------------------------
+
+@app.post("/api/map/start")
+async def api_map_start() -> JSONResponse:
+    """Begin a mapping session — starts recording WiFi scans with position markers."""
+    global _mapping_active, _mapping_session_id, _mapping_start_time
+    global _mapping_scans, _mapping_markers, _mapping_results
+
+    with _mapping_lock:
+        if _mapping_active:
+            return JSONResponse(status_code=409, content={
+                "error": "Mapping already active",
+                "session_id": _mapping_session_id,
+            })
+        _mapping_active = True
+        _mapping_session_id = uuid.uuid4().hex[:12]
+        _mapping_start_time = time.time()
+        _mapping_scans = []
+        _mapping_markers = []
+        _mapping_results = {}
+
+    log.info("[map] Mapping session started: %s", _mapping_session_id)
+    return JSONResponse(content={
+        "status": "mapping_started",
+        "session_id": _mapping_session_id,
+        "start_time": _mapping_start_time,
+    })
+
+
+@app.post("/api/map/mark")
+async def api_map_mark(request: Request) -> JSONResponse:
+    """Mark current position during a mapping walk-around.
+
+    Body: {"label": "corner1", "x": 0.0, "y": 0.0}
+    """
+    global _mapping_markers
+
+    if not _mapping_active:
+        return JSONResponse(status_code=400, content={"error": "Mapping not active"})
+
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "Invalid JSON body"})
+
+    label = body.get("label", "")
+    x = float(body.get("x", 0))
+    y = float(body.get("y", 0))
+
+    marker = {
+        "label": label,
+        "x": x,
+        "y": y,
+        "timestamp": time.time(),
+        "heading": camera_state.get("heading", 0.0),
+    }
+
+    with _mapping_lock:
+        _mapping_markers.append(marker)
+        marker_count = len(_mapping_markers)
+
+    log.info("[map] Marker added: %s at (%.1f, %.1f) — total %d markers",
+             label, x, y, marker_count)
+    return JSONResponse(content={
+        "status": "marker_added",
+        "marker": marker,
+        "total_markers": marker_count,
+        "total_scans": len(_mapping_scans),
+    })
+
+
+@app.post("/api/map/stop")
+async def api_map_stop() -> JSONResponse:
+    """Stop the mapping session, compute AP positions, and save results."""
+    global _mapping_active, _mapping_results
+
+    if not _mapping_active:
+        return JSONResponse(status_code=400, content={"error": "Mapping not active"})
+
+    with _mapping_lock:
+        _mapping_active = False
+        scans_copy = list(_mapping_scans)
+        markers_copy = list(_mapping_markers)
+        session_id = _mapping_session_id
+        start_time = _mapping_start_time
+
+    log.info("[map] Mapping stopped: %s — %d scans, %d markers",
+             session_id, len(scans_copy), len(markers_copy))
+
+    # Compute AP positions via trilateration
+    results = _compute_mapping_results(scans_copy, markers_copy)
+
+    session_data = {
+        "session_id": session_id,
+        "start_time": start_time,
+        "stop_time": time.time(),
+        "duration_s": round(time.time() - start_time, 1),
+        "scans": scans_copy,
+        "markers": markers_copy,
+        "results": results,
+    }
+
+    with _mapping_lock:
+        _mapping_results = session_data
+
+    # Save to file
+    try:
+        MAP_DATA_PATH.write_text(json.dumps(session_data, indent=2), encoding="utf-8")
+        log.info("[map] Results saved to %s", MAP_DATA_PATH)
+    except Exception:
+        log.exception("[map] Failed to save map data")
+
+    return JSONResponse(content={
+        "status": "mapping_complete",
+        "session_id": session_id,
+        "duration_s": session_data["duration_s"],
+        "scan_count": len(scans_copy),
+        "marker_count": len(markers_copy),
+        "ap_count": len(results.get("aps", [])),
+        "motion_zones": len(results.get("motion_zones", [])),
+        "results": results,
+    })
+
+
+@app.get("/api/map/data")
+async def api_map_data() -> JSONResponse:
+    """Return current/last mapping session data."""
+    with _mapping_lock:
+        if _mapping_active:
+            # Return live session data
+            return JSONResponse(content={
+                "status": "mapping_active",
+                "session_id": _mapping_session_id,
+                "start_time": _mapping_start_time,
+                "elapsed_s": round(time.time() - _mapping_start_time, 1),
+                "scan_count": len(_mapping_scans),
+                "marker_count": len(_mapping_markers),
+                "markers": list(_mapping_markers),
+            })
+        if _mapping_results:
+            return JSONResponse(content={
+                "status": "mapping_complete",
+                **_mapping_results,
+            })
+
+    # Try loading from file
+    if MAP_DATA_PATH.exists():
+        try:
+            data = json.loads(MAP_DATA_PATH.read_text(encoding="utf-8"))
+            return JSONResponse(content={"status": "loaded_from_file", **data})
+        except Exception:
+            pass
+
+    return JSONResponse(content={"status": "no_data"})
+
+
+# ---------------------------------------------------------------------------
+# ── iPhone Depth Scan Ingestion ──
+# ---------------------------------------------------------------------------
+
+@app.post("/api/map/depth-scan")
+async def api_map_depth_scan(file: UploadFile = File(...)) -> JSONResponse:
+    """Accept a 3D scan file (PLY point cloud or USDZ) from iPhone LiDAR.
+
+    Saves the file to backend/scans/ and returns success.
+    Point cloud processing (floor plan extraction) is a future enhancement.
+    """
+    if not file.filename:
+        return JSONResponse(status_code=400, content={"error": "No filename provided"})
+
+    # Validate extension
+    ext = Path(file.filename).suffix.lower()
+    allowed_exts = {".ply", ".usdz", ".usda", ".usdc", ".obj", ".xyz", ".las", ".e57"}
+    if ext not in allowed_exts:
+        return JSONResponse(status_code=400, content={
+            "error": "Unsupported file type: {}".format(ext),
+            "allowed": sorted(allowed_exts),
+        })
+
+    # Save with timestamp prefix to avoid collisions
+    ts_prefix = time.strftime("%Y%m%d_%H%M%S")
+    safe_name = "{}_{}".format(ts_prefix, file.filename.replace("/", "_").replace("\\", "_"))
+    save_path = SCANS_DIR / safe_name
+
+    try:
+        contents = await file.read()
+        save_path.write_bytes(contents)
+        file_size = len(contents)
+    except Exception as exc:
+        log.exception("[depth-scan] Failed to save uploaded file")
+        return JSONResponse(status_code=500, content={"error": "Failed to save file: {}".format(str(exc))})
+
+    log.info("[depth-scan] Saved %s (%d bytes) to %s", file.filename, file_size, save_path)
+
+    return JSONResponse(content={
+        "status": "scan_saved",
+        "filename": safe_name,
+        "original_name": file.filename,
+        "file_size": file_size,
+        "format": ext.lstrip("."),
+        "path": str(save_path),
+        "note": "Point cloud floor plan extraction not yet implemented — file saved for future processing.",
+    })
 
 
 # ---------------------------------------------------------------------------
