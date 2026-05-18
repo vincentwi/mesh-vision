@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MESH VISION // OFFICE WiFi MAP</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --neon:#00ff41;--cyan:#00d4ff;--orange:#ff6b00;--red:#ff0040;--purple:#bb44ff;
+  --bg:#000;--panel:rgba(0,20,0,0.6);--border:rgba(0,255,65,0.3);
+  --font:'JetBrains Mono',monospace;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font);color:var(--neon);font-size:11px;}
+
+/* CRT Scanlines */
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,65,0.03) 3px,rgba(0,255,65,0.03) 4px);
+  pointer-events:none;z-index:9998;}
+/* Vignette */
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.6) 100%);
+  pointer-events:none;z-index:9999;}
+
+#app{width:100%;height:100%;display:grid;grid-template-rows:32px 1fr 28px;grid-template-columns:260px 1fr;}
+
+/* Top nav bar */
+#topbar{grid-row:1;grid-column:1/3;background:var(--panel);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:12px;}
+#topbar .nav-title{font-size:10px;color:var(--cyan);letter-spacing:3px;text-shadow:0 0 6px var(--cyan);}
+.nav-link{font-size:9px;color:var(--neon);text-decoration:none;padding:3px 8px;border:1px solid var(--border);
+  border-radius:2px;letter-spacing:1px;transition:all 0.2s;cursor:pointer;}
+.nav-link:hover{background:rgba(0,255,65,0.15);border-color:var(--neon);text-shadow:0 0 6px var(--neon);}
+.nav-link.active{background:rgba(0,255,65,0.12);border-color:var(--neon);}
+#topbar .nav-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:8px;}
+#ws-dot{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);transition:all 0.3s;}
+#ws-dot.connected{background:var(--neon);box-shadow:0 0 8px var(--neon);}
+
+/* Sidebar */
+#sidebar{grid-row:2;grid-column:1;background:var(--panel);border-right:1px solid var(--border);
+  overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--neon) transparent;}
+#sidebar::-webkit-scrollbar{width:3px;}
+#sidebar::-webkit-scrollbar-thumb{background:var(--neon);border-radius:2px;}
+
+.sidebar-section{padding:8px 10px;border-bottom:1px solid var(--border);}
+.sidebar-section-title{font-size:8px;color:var(--cyan);letter-spacing:2px;margin-bottom:6px;
+  text-shadow:0 0 4px var(--cyan);opacity:0.9;}
+
+/* Buttons */
+.btn{display:block;width:100%;padding:6px 10px;margin:4px 0;background:rgba(0,20,0,0.8);
+  border:1px solid var(--border);color:var(--neon);font-family:var(--font);font-size:9px;
+  cursor:pointer;letter-spacing:1px;text-align:center;transition:all 0.2s;border-radius:2px;}
+.btn:hover{background:rgba(0,255,65,0.15);border-color:var(--neon);text-shadow:0 0 6px var(--neon);}
+.btn.active{background:rgba(0,255,65,0.2);border-color:var(--neon);box-shadow:0 0 8px rgba(0,255,65,0.3);}
+.btn.danger{border-color:rgba(255,0,64,0.4);color:var(--red);}
+.btn.danger:hover{background:rgba(255,0,64,0.15);border-color:var(--red);}
+.btn.cyan{border-color:rgba(0,212,255,0.4);color:var(--cyan);}
+.btn.cyan:hover{background:rgba(0,212,255,0.15);border-color:var(--cyan);}
+.btn.purple{border-color:rgba(187,68,255,0.4);color:var(--purple);}
+.btn.purple:hover{background:rgba(187,68,255,0.15);border-color:var(--purple);}
+
+#map-status{font-size:9px;color:var(--orange);margin:6px 0;padding:4px 6px;
+  background:rgba(255,107,0,0.08);border:1px solid rgba(255,107,0,0.2);border-radius:2px;text-align:center;}
+#map-instructions{font-size:8px;color:rgba(0,255,65,0.5);margin:4px 0;line-height:1.5;}
+
+/* AP List */
+#ap-list{flex:1;overflow-y:auto;min-height:0;}
+.ap-item{display:flex;align-items:center;gap:6px;padding:4px 6px;margin:2px 0;
+  background:rgba(0,20,0,0.4);border-left:2px solid var(--neon);border-radius:0 2px 2px 0;
+  cursor:pointer;transition:all 0.15s;font-size:8px;}
+.ap-item:hover{background:rgba(0,255,65,0.1);}
+.ap-item.selected{background:rgba(0,212,255,0.12);border-left-color:var(--cyan);}
+.ap-item.stable{border-left-color:#00ff41;}
+.ap-item.moderate{border-left-color:#ffcc00;}
+.ap-item.unstable{border-left-color:#ff0040;}
+.ap-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.ap-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--neon);}
+.ap-rssi{color:var(--cyan);font-size:7px;min-width:32px;text-align:right;}
+.ap-ch{color:var(--orange);font-size:7px;min-width:24px;text-align:right;}
+
+/* Depth scan */
+#depth-input{display:none;}
+#depth-status{font-size:8px;color:rgba(0,255,65,0.4);margin:4px 0;}
+
+/* Stats section */
+.stat-row{display:flex;justify-content:space-between;align-items:center;margin:2px 0;font-size:8px;}
+.stat-label{color:rgba(0,255,65,0.5);}
+.stat-value{color:var(--cyan);font-weight:600;}
+
+/* Canvas area */
+#canvas-wrap{grid-row:2;grid-column:2;position:relative;overflow:hidden;background:#000;}
+#map-canvas{position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;}
+#canvas-tooltip{position:absolute;background:rgba(0,12,0,0.92);border:1px solid var(--neon);
+  padding:4px 8px;font-size:8px;color:var(--neon);pointer-events:none;display:none;z-index:10;
+  text-shadow:0 0 4px var(--neon);white-space:nowrap;border-radius:2px;}
+#canvas-mode{position:absolute;top:8px;right:10px;font-size:9px;color:var(--orange);
+  letter-spacing:2px;text-shadow:0 0 6px var(--orange);opacity:0.8;z-index:5;}
+#canvas-coords{position:absolute;bottom:4px;right:10px;font-size:8px;color:rgba(0,255,65,0.4);z-index:5;}
+
+/* Bottom status bar */
+#statusbar{grid-row:3;grid-column:1/3;background:var(--panel);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:12px;font-size:8px;color:var(--neon);}
+.sbar-stat{display:flex;align-items:center;gap:3px;opacity:0.9;}
+.sbar-val{color:var(--cyan);font-weight:600;}
+.sbar-sep{width:1px;height:12px;background:var(--border);}
+
+/* Animations */
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 4px var(--neon);}50%{box-shadow:0 0 14px var(--neon),0 0 24px rgba(0,255,65,0.2);}}
+@keyframes scan-pulse{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(2.5);}}
+.mapping-active #map-status{animation:pulse-glow 1.5s ease-in-out infinite;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Top Navigation Bar -->
+  <div id="topbar">
+    <span class="nav-title">◈ OFFICE WiFi MAP</span>
+    <a class="nav-link" href="/">⟐ HUD</a>
+    <a class="nav-link active" href="/office-map.html">🗺 MAP</a>
+    <div class="nav-status">
+      <div id="ws-dot"></div>
+      <span id="ws-label">DISCONNECTED</span>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <!-- Mapping Controls -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">◈ MAPPING CONTROLS</div>
+      <button class="btn" id="btn-start-map" onclick="startMapping()">▶ START MAPPING</button>
+      <button class="btn cyan" id="btn-mark-pos" onclick="enterMarkMode()">⊕ MARK POSITION</button>
+      <button class="btn danger" id="btn-stop-map" onclick="stopMapping()" style="display:none;">■ STOP MAPPING</button>
+      <div id="map-status">READY</div>
+      <div id="map-instructions">Walk around the office perimeter slowly. Mark each corner. The system will fingerprint WiFi at every point.</div>
+    </div>
+
+    <!-- Depth Scan Upload -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">◈ DEPTH SCAN</div>
+      <button class="btn purple" onclick="document.getElementById('depth-input').click();">⬆ UPLOAD 3D SCAN</button>
+      <input type="file" id="depth-input" accept=".ply,.usdz,.obj" onchange="uploadDepthScan(this)">
+      <div id="depth-status">Accepts PLY, USDZ, OBJ</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">◈ STATS</div>
+      <div class="stat-row"><span class="stat-label">APs Visible</span><span class="stat-value" id="stat-aps">0</span></div>
+      <div class="stat-row"><span class="stat-label">Map Duration</span><span class="stat-value" id="stat-duration">--:--</span></div>
+      <div class="stat-row"><span class="stat-label">Scans</span><span class="stat-value" id="stat-scans">0</span></div>
+      <div class="stat-row"><span class="stat-label">Accuracy</span><span class="stat-value" id="stat-accuracy">±--m</span></div>
+      <div class="stat-row"><span class="stat-label">Room Hash</span><span class="stat-value" id="stat-roomhash">------</span></div>
+    </div>
+
+    <!-- AP List -->
+    <div class="sidebar-section" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+      <div class="sidebar-section-title">◈ DETECTED APs (<span id="ap-count">0</span>)</div>
+      <div id="ap-list"></div>
+    </div>
+  </div>
+
+  <!-- Map Canvas -->
+  <div id="canvas-wrap">
+    <canvas id="map-canvas"></canvas>
+    <div id="canvas-tooltip"></div>
+    <div id="canvas-mode">VIEW MODE</div>
+    <div id="canvas-coords"></div>
+  </div>
+
+  <!-- Status Bar -->
+  <div id="statusbar">
+    <div class="sbar-stat">APs:<span class="sbar-val" id="sb-aps">0</span></div>
+    <div class="sbar-sep"></div>
+    <div class="sbar-stat">Mode:<span class="sbar-val" id="sb-mode">VIEW</span></div>
+    <div class="sbar-sep"></div>
+    <div class="sbar-stat">Scans:<span class="sbar-val" id="sb-scans">0</span></div>
+    <div class="sbar-sep"></div>
+    <div class="sbar-stat">Markers:<span class="sbar-val" id="sb-markers">0</span></div>
+    <div class="sbar-sep"></div>
+    <div class="sbar-stat" style="color:var(--orange);">HDG:<span class="sbar-val" id="sb-hdg">---</span>°</div>
+    <div class="sbar-sep"></div>
+    <div class="sbar-stat" style="margin-left:auto;color:rgba(0,255,65,0.4);">MESH VISION v1.0</div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+const M = {
+  // WebSocket
+  ws: null, wsConnected: false,
+  // WiFi data from WS
+  wifi: [], strongestAps: [],
+  camera: { heading: 0, yaw_estimate: 0 },
+  // Mapping state
+  mapping: false, mappingStart: null, scanCount: 0,
+  // Map data from API
+  mapData: { mapping: false, scans: [], markers: [], ap_positions: {} },
+  // Canvas state
+  canvas: null, ctx: null,
+  canvasW: 0, canvasH: 0,
+  // Pan & zoom
+  pan: { x: 0, y: 0 }, zoom: 1,
+  dragging: false, dragStart: { x: 0, y: 0 }, panStart: { x: 0, y: 0 },
+  // Interaction mode: 'view', 'mark', 'wall'
+  mode: 'view',
+  // Walls (array of polylines, each is array of {x,y})
+  walls: [[]],
+  // Currently drawing wall
+  drawingWall: false,
+  // Selected AP
+  selectedAp: null,
+  // Current position estimate
+  myPos: null,
+  // Pi position
+  piPos: null,
+  // Floor plan outline (from depth scan)
+  floorPlan: null,
+  // Animation
+  animFrame: 0,
+  // Poll timer
+  pollTimer: null,
+  // Grid spacing in canvas pixels
+  gridSpacing: 20,
+  // Heatmap cache
+  heatmapDirty: true,
+  heatmapCanvas: null, heatmapCtx: null,
+};
+
+// ===== INIT =====
+function init() {
+  M.canvas = document.getElementById('map-canvas');
+  M.ctx = M.canvas.getContext('2d');
+  M.heatmapCanvas = document.createElement('canvas');
+  M.heatmapCtx = M.heatmapCanvas.getContext('2d');
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  // Canvas interactions
+  M.canvas.addEventListener('mousedown', onCanvasMouseDown);
+  M.canvas.addEventListener('mousemove', onCanvasMouseMove);
+  M.canvas.addEventListener('mouseup', onCanvasMouseUp);
+  M.canvas.addEventListener('wheel', onCanvasWheel, { passive: false });
+  M.canvas.addEventListener('click', onCanvasClick);
+  M.canvas.addEventListener('dblclick', onCanvasDblClick);
+  M.canvas.addEventListener('contextmenu', e => { e.preventDefault(); enterWallMode(); });
+
+  connectWS();
+  animate();
+}
+
+function resizeCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  const r = wrap.getBoundingClientRect();
+  M.canvasW = Math.floor(r.width);
+  M.canvasH = Math.floor(r.height);
+  M.canvas.width = M.canvasW;
+  M.canvas.height = M.canvasH;
+  M.heatmapCanvas.width = M.canvasW;
+  M.heatmapCanvas.height = M.canvasH;
+  M.heatmapDirty = true;
+}
+
+// ===== COORDINATE TRANSFORMS =====
+function worldToScreen(wx, wy) {
+  return {
+    x: (wx - M.pan.x) * M.zoom + M.canvasW / 2,
+    y: (wy - M.pan.y) * M.zoom + M.canvasH / 2
+  };
+}
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx - M.canvasW / 2) / M.zoom + M.pan.x,
+    y: (sy - M.canvasH / 2) / M.zoom + M.pan.y
+  };
+}
+
+// ===== WEBSOCKET =====
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = proto + '//' + location.host + '/ws/mesh';
+  try {
+    M.ws = new WebSocket(url);
+    M.ws.onopen = () => {
+      M.wsConnected = true;
+      document.getElementById('ws-dot').classList.add('connected');
+      document.getElementById('ws-label').textContent = 'CONNECTED';
+    };
+    M.ws.onclose = () => {
+      M.wsConnected = false;
+      document.getElementById('ws-dot').classList.remove('connected');
+      document.getElementById('ws-label').textContent = 'DISCONNECTED';
+      setTimeout(connectWS, 3000);
+    };
+    M.ws.onerror = () => {};
+    M.ws.onmessage = (ev) => {
+      try {
+        const d = JSON.parse(ev.data);
+        handleWSData(d);
+      } catch(e) {}
+    };
+  } catch(e) {
+    setTimeout(connectWS, 3000);
+  }
+}
+
+function handleWSData(d) {
+  if (d.wifi) {
+    M.wifi = d.wifi;
+    updateAPList();
+    M.heatmapDirty = true;
+  }
+  if (d.environment) {
+    if (d.environment.strongest_aps) M.strongestAps = d.environment.strongest_aps;
+    if (d.environment.room_fingerprint_hash) {
+      document.getElementById('stat-roomhash').textContent = d.environment.room_fingerprint_hash;
+    }
+    if (d.environment.ap_count !== undefined) {
+      document.getElementById('stat-aps').textContent = d.environment.ap_count;
+      document.getElementById('sb-aps').textContent = d.environment.ap_count;
+      document.getElementById('ap-count').textContent = d.environment.ap_count;
+    }
+  }
+  if (d.camera) {
+    M.camera = d.camera;
+    document.getElementById('sb-hdg').textContent = Math.round(d.camera.heading || 0);
+  }
+  // Estimate current position from strongest AP
+  estimatePosition();
+}
+
+// ===== AP LIST =====
+function updateAPList() {
+  const list = document.getElementById('ap-list');
+  const aps = [...(M.strongestAps.length ? M.strongestAps : M.wifi)];
+  aps.sort((a, b) => (b.rssi || 0) - (a.rssi || 0));
+
+  list.innerHTML = '';
+  aps.forEach(ap => {
+    const stab = ap.stability !== undefined ? ap.stability : (ap.variance !== undefined ? (ap.variance < 3 ? 1 : ap.variance < 8 ? 0.5 : 0) : 0.5);
+    const stabClass = stab > 0.7 ? 'stable' : stab > 0.3 ? 'moderate' : 'unstable';
+    const stabColor = stab > 0.7 ? '#00ff41' : stab > 0.3 ? '#ffcc00' : '#ff0040';
+    const selected = M.selectedAp === (ap.ssid || ap.bssid) ? ' selected' : '';
+
+    const div = document.createElement('div');
+    div.className = 'ap-item ' + stabClass + selected;
+    div.innerHTML = `<div class="ap-dot" style="background:${stabColor};box-shadow:0 0 4px ${stabColor};"></div>` +
+      `<span class="ap-name">${ap.ssid || ap.bssid || '???'}</span>` +
+      `<span class="ap-rssi">${ap.rssi || '--'}dBm</span>` +
+      `<span class="ap-ch">ch${ap.channel || '?'}</span>`;
+    div.onclick = () => selectAP(ap.ssid || ap.bssid);
+    list.appendChild(div);
+  });
+}
+
+function selectAP(name) {
+  M.selectedAp = M.selectedAp === name ? null : name;
+  updateAPList();
+}
+
+// ===== POSITION ESTIMATION =====
+function estimatePosition() {
+  const aps = M.mapData.ap_positions;
+  if (!aps || Object.keys(aps).length === 0) return;
+
+  // Weighted centroid from current WiFi scan
+  let wx = 0, wy = 0, wt = 0;
+  M.wifi.forEach(w => {
+    const key = w.ssid || w.bssid;
+    const pos = aps[key];
+    if (!pos) return;
+    const weight = Math.pow(10, (w.rssi || -100) / 20);
+    wx += pos.x * weight;
+    wy += pos.y * weight;
+    wt += weight;
+  });
+  if (wt > 0) {
+    M.myPos = { x: wx / wt, y: wy / wt };
+  }
+}
+
+// ===== MAPPING API =====
+function startMapping() {
+  fetch('/api/map/start', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      M.mapping = true;
+      M.mappingStart = Date.now();
+      M.scanCount = 0;
+      document.getElementById('btn-start-map').style.display = 'none';
+      document.getElementById('btn-stop-map').style.display = 'block';
+      document.getElementById('map-status').textContent = 'RECORDING... 0 scans';
+      document.getElementById('sb-mode').textContent = 'MAPPING';
+      document.getElementById('canvas-mode').textContent = 'MAPPING MODE';
+      document.body.classList.add('mapping-active');
+      startPolling();
+    })
+    .catch(() => { document.getElementById('map-status').textContent = 'ERROR: Cannot reach API'; });
+}
+
+function stopMapping() {
+  fetch('/api/map/stop', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      M.mapping = false;
+      document.getElementById('btn-start-map').style.display = 'block';
+      document.getElementById('btn-stop-map').style.display = 'none';
+      document.getElementById('map-status').textContent = 'READY — ' + M.scanCount + ' scans recorded';
+      document.getElementById('sb-mode').textContent = 'VIEW';
+      document.getElementById('canvas-mode').textContent = 'VIEW MODE';
+      document.body.classList.remove('mapping-active');
+      stopPolling();
+    })
+    .catch(() => {});
+}
+
+function enterMarkMode() {
+  M.mode = 'mark';
+  document.getElementById('canvas-mode').textContent = 'CLICK TO MARK POSITION';
+  document.getElementById('canvas-mode').style.color = 'var(--cyan)';
+  M.canvas.style.cursor = 'cell';
+}
+
+function enterWallMode() {
+  if (M.mode === 'wall') {
+    // Finish current wall
+    M.mode = 'view';
+    document.getElementById('canvas-mode').textContent = M.mapping ? 'MAPPING MODE' : 'VIEW MODE';
+    document.getElementById('canvas-mode').style.color = 'var(--orange)';
+    M.canvas.style.cursor = 'crosshair';
+    if (M.walls[M.walls.length - 1].length > 0) M.walls.push([]);
+    return;
+  }
+  M.mode = 'wall';
+  document.getElementById('canvas-mode').textContent = 'DRAWING WALLS — Right-click to finish';
+  document.getElementById('canvas-mode').style.color = '#ff6b00';
+  M.canvas.style.cursor = 'crosshair';
+}
+
+function startPolling() {
+  if (M.pollTimer) return;
+  M.pollTimer = setInterval(pollMapData, 2000);
+  pollMapData();
+}
+
+function stopPolling() {
+  if (M.pollTimer) { clearInterval(M.pollTimer); M.pollTimer = null; }
+}
+
+function pollMapData() {
+  fetch('/api/map/data')
+    .then(r => r.json())
+    .then(d => {
+      M.mapData = d;
+      M.scanCount = d.scans ? d.scans.length : 0;
+      if (M.mapping) {
+        document.getElementById('map-status').textContent = 'RECORDING... ' + M.scanCount + ' scans';
+      }
+      document.getElementById('stat-scans').textContent = M.scanCount;
+      document.getElementById('sb-scans').textContent = M.scanCount;
+      document.getElementById('sb-markers').textContent = d.markers ? d.markers.length : 0;
+      M.heatmapDirty = true;
+      estimatePosition();
+    })
+    .catch(() => {});
+}
+
+function markPosition(wx, wy) {
+  const label = 'P' + ((M.mapData.markers ? M.mapData.markers.length : 0) + 1);
+  fetch('/api/map/mark', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ x: wx, y: wy, label: label })
+  }).then(r => r.json()).then(() => {
+    M.mode = 'view';
+    document.getElementById('canvas-mode').textContent = M.mapping ? 'MAPPING MODE' : 'VIEW MODE';
+    document.getElementById('canvas-mode').style.color = 'var(--orange)';
+    M.canvas.style.cursor = 'crosshair';
+    pollMapData();
+  }).catch(() => {});
+}
+
+// ===== DEPTH SCAN UPLOAD =====
+function uploadDepthScan(input) {
+  if (!input.files.length) return;
+  const file = input.files[0];
+  const fd = new FormData();
+  fd.append('scan', file);
+  document.getElementById('depth-status').textContent = 'Uploading ' + file.name + '...';
+  fetch('/api/map/depth-scan', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('depth-status').textContent = '✓ Uploaded: ' + file.name;
+      if (d.outline) M.floorPlan = d.outline;
+    })
+    .catch(() => { document.getElementById('depth-status').textContent = '✗ Upload failed'; });
+}
+
+// ===== CANVAS EVENTS =====
+function onCanvasMouseDown(e) {
+  if (e.button === 0 && M.mode === 'view') {
+    M.dragging = true;
+    M.dragStart = { x: e.offsetX, y: e.offsetY };
+    M.panStart = { ...M.pan };
+    M.canvas.style.cursor = 'grabbing';
+  }
+}
+
+function onCanvasMouseMove(e) {
+  const wx = screenToWorld(e.offsetX, e.offsetY);
+  document.getElementById('canvas-coords').textContent =
+    `X:${wx.x.toFixed(1)} Y:${wx.y.toFixed(1)} Z:${M.zoom.toFixed(1)}x`;
+
+  if (M.dragging) {
+    M.pan.x = M.panStart.x - (e.offsetX - M.dragStart.x) / M.zoom;
+    M.pan.y = M.panStart.y - (e.offsetY - M.dragStart.y) / M.zoom;
+  }
+
+  // Tooltip for AP hover
+  const aps = M.mapData.ap_positions || {};
+  let found = null;
+  Object.entries(aps).forEach(([name, pos]) => {
+    const sp = worldToScreen(pos.x, pos.y);
+    const dx = e.offsetX - sp.x, dy = e.offsetY - sp.y;
+    if (dx * dx + dy * dy < 225) found = { name, pos };
+  });
+  const tt = document.getElementById('canvas-tooltip');
+  if (found) {
+    tt.style.display = 'block';
+    tt.style.left = (e.offsetX + 12) + 'px';
+    tt.style.top = (e.offsetY - 8) + 'px';
+    tt.textContent = found.name + ' (' + (found.pos.avg_rssi || '--') + 'dBm)';
+  } else {
+    tt.style.display = 'none';
+  }
+}
+
+function onCanvasMouseUp(e) {
+  if (M.dragging) {
+    M.dragging = false;
+    M.canvas.style.cursor = M.mode === 'mark' ? 'cell' : 'crosshair';
+  }
+}
+
+function onCanvasWheel(e) {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.12 : 0.89;
+  M.zoom = Math.max(0.2, Math.min(10, M.zoom * factor));
+  M.heatmapDirty = true;
+}
+
+function onCanvasClick(e) {
+  const w = screenToWorld(e.offsetX, e.offsetY);
+
+  if (M.mode === 'mark') {
+    markPosition(w.x, w.y);
+    return;
+  }
+
+  if (M.mode === 'wall') {
+    const current = M.walls[M.walls.length - 1];
+    current.push({ x: w.x, y: w.y });
+    return;
+  }
+}
+
+function onCanvasDblClick(e) {
+  // Reset pan/zoom
+  M.pan = { x: 0, y: 0 };
+  M.zoom = 1;
+  M.heatmapDirty = true;
+}
+
+// ===== RENDERING =====
+function animate() {
+  M.animFrame++;
+  draw();
+  updateDuration();
+  requestAnimationFrame(animate);
+}
+
+function updateDuration() {
+  if (M.mapping && M.mappingStart) {
+    const elapsed = Math.floor((Date.now() - M.mappingStart) / 1000);
+    const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const ss = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('stat-duration').textContent = mm + ':' + ss;
+  }
+}
+
+function draw() {
+  const ctx = M.ctx;
+  const W = M.canvasW, H = M.canvasH;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = '#000a00';
+  ctx.fillRect(0, 0, W, H);
+
+  drawGrid(ctx, W, H);
+  drawFloorPlan(ctx);
+  drawHeatmap(ctx);
+  drawWalls(ctx);
+  drawAPPositions(ctx);
+  drawMarkers(ctx);
+  drawMotionZones(ctx);
+  drawMyPosition(ctx);
+  drawPiPosition(ctx);
+  drawDirectionIndicators(ctx);
+  drawScanOverlay(ctx);
+}
+
+function drawGrid(ctx, W, H) {
+  ctx.strokeStyle = 'rgba(0,255,65,0.06)';
+  ctx.lineWidth = 1;
+  const gs = M.gridSpacing * M.zoom;
+  const offsetX = (W / 2 - M.pan.x * M.zoom) % gs;
+  const offsetY = (H / 2 - M.pan.y * M.zoom) % gs;
+
+  ctx.beginPath();
+  for (let x = offsetX; x < W; x += gs) {
+    ctx.moveTo(x, 0); ctx.lineTo(x, H);
+  }
+  for (let y = offsetY; y < H; y += gs) {
+    ctx.moveTo(0, y); ctx.lineTo(W, y);
+  }
+  ctx.stroke();
+
+  // Origin crosshair
+  const o = worldToScreen(0, 0);
+  ctx.strokeStyle = 'rgba(0,255,65,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(o.x, 0); ctx.lineTo(o.x, H);
+  ctx.moveTo(0, o.y); ctx.lineTo(W, o.y);
+  ctx.stroke();
+}
+
+function drawFloorPlan(ctx) {
+  if (!M.floorPlan || !M.floorPlan.length) return;
+  ctx.strokeStyle = 'rgba(187,68,255,0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  M.floorPlan.forEach((pt, i) => {
+    const s = worldToScreen(pt.x, pt.y);
+    i === 0 ? ctx.moveTo(s.x, s.y) : ctx.lineTo(s.x, s.y);
+  });
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function drawHeatmap(ctx) {
+  const aps = M.mapData.ap_positions || {};
+  const entries = Object.entries(aps);
+  if (entries.length === 0) return;
+
+  // Draw signal radius rings for each AP
+  entries.forEach(([name, pos]) => {
+    const sp = worldToScreen(pos.x, pos.y);
+    const rssi = pos.avg_rssi || -70;
+    const maxRadius = Math.max(30, (rssi + 100) * 2.5) * M.zoom;
+
+    // Concentric heatmap rings
+    const rings = 5;
+    for (let i = rings; i >= 1; i--) {
+      const r = maxRadius * (i / rings);
+      const alpha = 0.04 + 0.03 * (1 - i / rings);
+      const hue = 120 - (i / rings) * 120; // green -> red
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
+      ctx.fill();
+    }
+
+    // Highlight selected AP
+    if (M.selectedAp === name) {
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, maxRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,212,255,0.4)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  });
+}
+
+function drawWalls(ctx) {
+  ctx.strokeStyle = 'rgba(255,107,0,0.7)';
+  ctx.lineWidth = 2;
+  M.walls.forEach(wall => {
+    if (wall.length < 2) return;
+    ctx.beginPath();
+    wall.forEach((pt, i) => {
+      const s = worldToScreen(pt.x, pt.y);
+      i === 0 ? ctx.moveTo(s.x, s.y) : ctx.lineTo(s.x, s.y);
+    });
+    ctx.stroke();
+    // Draw corner dots
+    wall.forEach(pt => {
+      const s = worldToScreen(pt.x, pt.y);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#ff6b00';
+      ctx.fill();
+    });
+  });
+
+  // Draw in-progress wall (last segment follows cursor)
+  const current = M.walls[M.walls.length - 1];
+  if (M.mode === 'wall' && current.length > 0) {
+    ctx.strokeStyle = 'rgba(255,107,0,0.4)';
+    ctx.setLineDash([4, 4]);
+    const last = current[current.length - 1];
+    const ls = worldToScreen(last.x, last.y);
+    ctx.beginPath();
+    ctx.moveTo(ls.x, ls.y);
+    // We'll draw to mouse pos in the next frame via mousemove state
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+function drawAPPositions(ctx) {
+  const aps = M.mapData.ap_positions || {};
+  const t = M.animFrame * 0.03;
+
+  Object.entries(aps).forEach(([name, pos]) => {
+    const sp = worldToScreen(pos.x, pos.y);
+    const isSelected = M.selectedAp === name;
+    const rssi = pos.avg_rssi || -70;
+
+    // Router icon — draw a small router shape
+    const sz = isSelected ? 10 : 7;
+    ctx.fillStyle = isSelected ? '#00d4ff' : '#00ff41';
+    ctx.strokeStyle = isSelected ? '#00d4ff' : '#00ff41';
+    ctx.lineWidth = 1.5;
+
+    // Router body
+    ctx.beginPath();
+    ctx.roundRect(sp.x - sz, sp.y - sz * 0.5, sz * 2, sz, 2);
+    ctx.fill();
+
+    // Antenna nubs
+    ctx.beginPath();
+    ctx.moveTo(sp.x - sz * 0.5, sp.y - sz * 0.5);
+    ctx.lineTo(sp.x - sz * 0.7, sp.y - sz * 1.2);
+    ctx.moveTo(sp.x + sz * 0.5, sp.y - sz * 0.5);
+    ctx.lineTo(sp.x + sz * 0.7, sp.y - sz * 1.2);
+    ctx.stroke();
+
+    // Signal waves animation
+    const pulse = (Math.sin(t + pos.x * 0.1) + 1) * 0.5;
+    for (let w = 1; w <= 2; w++) {
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y - sz * 1.2, (sz * 0.5 + w * 4) * (0.8 + pulse * 0.2), -Math.PI * 0.8, -Math.PI * 0.2);
+      ctx.strokeStyle = `rgba(0,255,65,${0.3 - w * 0.1})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // RSSI label
+    const wifiMatch = M.wifi.find(w => (w.ssid || w.bssid) === name);
+    const liveRssi = wifiMatch ? wifiMatch.rssi : rssi;
+    ctx.font = '8px "JetBrains Mono"';
+    ctx.fillStyle = isSelected ? '#00d4ff' : 'rgba(0,255,65,0.8)';
+    ctx.textAlign = 'center';
+    ctx.fillText(name.substring(0, 12), sp.x, sp.y + sz + 10);
+    ctx.fillStyle = '#00d4ff';
+    ctx.fillText(liveRssi + 'dBm', sp.x, sp.y + sz + 19);
+
+    // Signal strength bars next to AP
+    const bars = Math.max(0, Math.min(4, Math.round((liveRssi + 100) / 18)));
+    for (let b = 0; b < 4; b++) {
+      const bx = sp.x + sz + 6 + b * 4;
+      const bh = 3 + b * 2;
+      ctx.fillStyle = b < bars ? (b < 2 ? '#ff0040' : b < 3 ? '#ffcc00' : '#00ff41') : 'rgba(0,255,65,0.15)';
+      ctx.fillRect(bx, sp.y - bh, 3, bh);
+    }
+  });
+}
+
+function drawMarkers(ctx) {
+  const markers = M.mapData.markers || [];
+  markers.forEach(mk => {
+    const sp = worldToScreen(mk.x, mk.y);
+
+    // Diamond marker
+    ctx.fillStyle = 'rgba(255,107,0,0.8)';
+    ctx.strokeStyle = '#ff6b00';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sp.x, sp.y - 6);
+    ctx.lineTo(sp.x + 5, sp.y);
+    ctx.lineTo(sp.x, sp.y + 6);
+    ctx.lineTo(sp.x - 5, sp.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Label
+    ctx.font = '8px "JetBrains Mono"';
+    ctx.fillStyle = '#ff6b00';
+    ctx.textAlign = 'center';
+    ctx.fillText(mk.label || '•', sp.x, sp.y - 10);
+  });
+}
+
+function drawMotionZones(ctx) {
+  // Highlight areas with high AP variance = people walking
+  const aps = M.mapData.ap_positions || {};
+  Object.entries(aps).forEach(([name, pos]) => {
+    const apData = M.strongestAps.find(a => a.ssid === name);
+    if (!apData || !apData.variance) return;
+    if (apData.variance < 5) return; // low variance, no motion
+
+    const sp = worldToScreen(pos.x, pos.y);
+    const radius = Math.min(60, apData.variance * 4) * M.zoom;
+    const alpha = Math.min(0.15, apData.variance * 0.01);
+
+    // Pulsing motion zone
+    const pulse = (Math.sin(M.animFrame * 0.05 + pos.x) + 1) * 0.5;
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, radius * (0.9 + pulse * 0.1), 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,0,64,${alpha * (0.6 + pulse * 0.4)})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255,0,64,${alpha * 2})`;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+}
+
+function drawMyPosition(ctx) {
+  if (!M.myPos) return;
+  const sp = worldToScreen(M.myPos.x, M.myPos.y);
+  const t = M.animFrame * 0.04;
+
+  // Outer pulse ring
+  const pulseR = 12 + Math.sin(t) * 3;
+  ctx.beginPath();
+  ctx.arc(sp.x, sp.y, pulseR, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0,100,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Inner dot
+  ctx.beginPath();
+  ctx.arc(sp.x, sp.y, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#0066ff';
+  ctx.fill();
+  ctx.strokeStyle = '#00aaff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Heading indicator
+  const hdg = (M.camera.heading || 0) * Math.PI / 180 - Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(sp.x + Math.cos(hdg) * 8, sp.y + Math.sin(hdg) * 8);
+  ctx.lineTo(sp.x + Math.cos(hdg) * 18, sp.y + Math.sin(hdg) * 18);
+  ctx.strokeStyle = 'rgba(0,150,255,0.6)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Arrow head
+  const ahdg = hdg;
+  const ax = sp.x + Math.cos(ahdg) * 18, ay = sp.y + Math.sin(ahdg) * 18;
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(ax + Math.cos(ahdg + 2.6) * 6, ay + Math.sin(ahdg + 2.6) * 6);
+  ctx.moveTo(ax, ay);
+  ctx.lineTo(ax + Math.cos(ahdg - 2.6) * 6, ay + Math.sin(ahdg - 2.6) * 6);
+  ctx.stroke();
+
+  // Label
+  ctx.font = '9px "JetBrains Mono"';
+  ctx.fillStyle = '#00aaff';
+  ctx.textAlign = 'center';
+  ctx.fillText('YOU', sp.x, sp.y + 22);
+}
+
+function drawPiPosition(ctx) {
+  if (!M.piPos) return;
+  const sp = worldToScreen(M.piPos.x, M.piPos.y);
+
+  // Pi icon — raspberry shape
+  ctx.fillStyle = '#bb44ff';
+  ctx.beginPath();
+  ctx.arc(sp.x, sp.y, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#dd88ff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Pi symbol
+  ctx.font = 'bold 9px "JetBrains Mono"';
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('π', sp.x, sp.y);
+  ctx.textBaseline = 'alphabetic';
+
+  // Label
+  ctx.font = '8px "JetBrains Mono"';
+  ctx.fillStyle = '#bb44ff';
+  ctx.fillText('MESH-PI', sp.x, sp.y + 16);
+}
+
+function drawDirectionIndicators(ctx) {
+  if (!M.myPos) return;
+  const myS = worldToScreen(M.myPos.x, M.myPos.y);
+  const aps = M.mapData.ap_positions || {};
+
+  Object.entries(aps).forEach(([name, pos]) => {
+    const apS = worldToScreen(pos.x, pos.y);
+    const dx = apS.x - myS.x, dy = apS.y - myS.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 30) return;
+
+    // Find current RSSI for this AP
+    const wifiMatch = M.wifi.find(w => (w.ssid || w.bssid) === name);
+    if (!wifiMatch) return;
+
+    const strength = Math.max(0, Math.min(1, (wifiMatch.rssi + 100) / 70));
+    const alpha = 0.1 + strength * 0.3;
+
+    // Gradient line from you toward AP
+    const angle = Math.atan2(dy, dx);
+    const lineLen = Math.min(dist - 15, 40 + strength * 30);
+
+    ctx.beginPath();
+    ctx.moveTo(myS.x + Math.cos(angle) * 20, myS.y + Math.sin(angle) * 20);
+    ctx.lineTo(myS.x + Math.cos(angle) * lineLen, myS.y + Math.sin(angle) * lineLen);
+    ctx.strokeStyle = `rgba(0,212,255,${alpha})`;
+    ctx.lineWidth = 1 + strength * 2;
+    ctx.stroke();
+
+    // Arrowhead
+    const tipX = myS.x + Math.cos(angle) * lineLen;
+    const tipY = myS.y + Math.sin(angle) * lineLen;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX + Math.cos(angle + 2.6) * 5, tipY + Math.sin(angle + 2.6) * 5);
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX + Math.cos(angle - 2.6) * 5, tipY + Math.sin(angle - 2.6) * 5);
+    ctx.strokeStyle = `rgba(0,212,255,${alpha + 0.1})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+function drawScanOverlay(ctx) {
+  if (!M.mapping) return;
+
+  // Animated scanning ring from your position
+  if (M.myPos) {
+    const sp = worldToScreen(M.myPos.x, M.myPos.y);
+    const phase = (M.animFrame % 90) / 90;
+    const r = 10 + phase * 60 * M.zoom;
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,255,65,${0.3 * (1 - phase)})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Recording indicator
+  const blink = M.animFrame % 60 < 30;
+  if (blink) {
+    ctx.fillStyle = '#ff0040';
+    ctx.beginPath();
+    ctx.arc(15, 15, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = '9px "JetBrains Mono"';
+    ctx.fillStyle = '#ff0040';
+    ctx.textAlign = 'left';
+    ctx.fillText('● REC', 24, 18);
+  }
+}
+
+// ===== Accuracy estimate =====
+function updateAccuracy() {
+  const apCount = Object.keys(M.mapData.ap_positions || {}).length;
+  if (apCount === 0) {
+    document.getElementById('stat-accuracy').textContent = '±--m';
+    return;
+  }
+  // Rough heuristic: more APs = better accuracy
+  const acc = Math.max(0.5, 10 / Math.sqrt(apCount));
+  document.getElementById('stat-accuracy').textContent = '±' + acc.toFixed(1) + 'm';
+}
+
+// Poll map data on page load too (to show existing data)
+setTimeout(() => { pollMapData(); updateAccuracy(); }, 500);
+setInterval(updateAccuracy, 5000);
+
+// ===== CANVAS POLYFILL for roundRect =====
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    this.moveTo(x + r[0], y);
+    this.lineTo(x + w - r[1], y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
+    this.lineTo(x + w, y + h - r[2]);
+    this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
+    this.lineTo(x + r[3], y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
+    this.lineTo(x, y + r[0]);
+    this.quadraticCurveTo(x, y, x + r[0], y);
+    this.closePath();
+  };
+}
+
+// ===== START =====
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
