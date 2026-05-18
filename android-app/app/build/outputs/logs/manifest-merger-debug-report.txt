@@ -1,0 +1,338 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:2:1-40:12
+INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:2:1-40:12
+INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:2:1-40:12
+INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:2:1-40:12
+MERGED from [MercuryAndroidSDK-v0.2.5-20260212110627_ceaebc13.aar] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f8f7c2792a4fde92c5ee5a40aa9e2677/transformed/MercuryAndroidSDK-v0.2.5-20260212110627_ceaebc13/AndroidManifest.xml:2:1-9:12
+MERGED from [androidx.databinding:viewbinding:8.7.3] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f49c61f85ed934ba210a1f7dad1e414e/transformed/viewbinding-8.7.3/AndroidManifest.xml:2:1-7:12
+MERGED from [com.google.android.material:material:1.10.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/363d8c9be481442ae8a6b948a669eed6/transformed/material-1.10.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/3032cc005fea4fc545b7bfe8e8eb7865/transformed/appcompat-resources-1.6.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/417530eccd52536c447ea52a50cf33ce/transformed/constraintlayout-2.0.1/AndroidManifest.xml:2:1-11:12
+MERGED from [androidx.appcompat:appcompat:1.6.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/0b37b9eace45cf7e79d5723afd78e77a/transformed/appcompat-1.6.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.emoji2:emoji2-views-helper:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/13d91df0584660366ec70134e42d30a0/transformed/emoji2-views-helper-1.2.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/94f96c04f6d23940f7300526a3e51018/transformed/viewpager2-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.fragment:fragment:1.3.6] /Users/vinceroy/.gradle/caches/8.11.1/transforms/e09dfeef7436144ded505fd899bd1d04/transformed/fragment-1.3.6/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.activity:activity:1.8.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/334d2bcd04ea1d0c4ebc7d10ed97b408/transformed/activity-1.8.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9273299446baf61fdc0edc0cd818076c/transformed/drawerlayout-1.1.1/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/ef97363a93daa5514753a42ac2cbedd2/transformed/coordinatorlayout-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/8873ca7c9541152daf7092a86ec67297/transformed/dynamicanimation-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.transition:transition:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/d04b582f964e215caae055b96fa3d5bf/transformed/transition-1.2.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/832dec7d1de8fe7c19a0e7ce17995823/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/05dd34594f29d4932a80a654f5e94710/transformed/vectordrawable-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b432d763f395395a8b2ecfa3fc67cbb2/transformed/viewpager-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/7f545419d3b038618b01cc9e70379434/transformed/legacy-support-core-utils-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.loader:loader:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/0c17528e72f60b3388693ef46f2bfd3d/transformed/loader-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9363fb5c3ca09bdf5a645d739c90b7ce/transformed/recyclerview-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.customview:customview:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/aadfbc976b7bc8d752d36e827c09d2ba/transformed/customview-1.1.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:17:1-30:12
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/c1b7db82679b0bdc3ef97ef37e179796/transformed/savedstate-1.2.1/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/112794e6e73ffcbb44493ca9dd1a78d4/transformed/lifecycle-livedata-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/a1b7f839874caade8e9ab59fddda4396/transformed/lifecycle-livedata-core-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:17:1-35:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/008a30cd62a03ccde041ab86ed3206df/transformed/lifecycle-viewmodel-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/faf858bf27c1b9c144e0c3fc5309c747/transformed/lifecycle-runtime-2.6.2/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/be255d843e1aa9b941a1f5cfc0a67a59/transformed/lifecycle-runtime-ktx-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/ebcc869765867ad7a7da61577337fb8e/transformed/lifecycle-viewmodel-ktx-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f816bde1143908d746811f117b044424/transformed/lifecycle-viewmodel-savedstate-2.6.2/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.core:core-ktx:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/721f493b6a76ee80f70f7b0ef1a6874b/transformed/core-ktx-1.12.0/AndroidManifest.xml:2:1-7:12
+MERGED from [androidx.annotation:annotation-experimental:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4ca02a19d3d4704edf87219ea6cbd984/transformed/annotation-experimental-1.3.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9c93433d3108e33f85e1694b946fd156/transformed/cursoradapter-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.cardview:cardview:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/cc47249d9c87868f9ca1b3a082c67965/transformed/cardview-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/a147c84e5c148fa7eaf961cb4047a7a8/transformed/interpolator-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b3e0769ca0f6a22f7cbb58c5515e09c5/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:17:1-27:12
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:17:1-55:12
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/db5d26ca0b1a96b406bd93ec1a48f230/transformed/startup-runtime-1.1.1/AndroidManifest.xml:17:1-33:12
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/2a2c8dfa58d4bb8abdbca9c6c9f3263a/transformed/tracing-1.0.0/AndroidManifest.xml:17:1-24:12
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/2b225559330acb13823a49f219f2a532/transformed/core-runtime-2.2.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.documentfile:documentfile:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/5ae833f46e0dfe682bb54f075eea19ab/transformed/documentfile-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f7d7130ad6722d33cade0ab3b4b602ac/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:17:1-22:12
+MERGED from [androidx.print:print:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/12d2e468604b373cf2d22abc74a7e1a0/transformed/print-1.0.0/AndroidManifest.xml:17:1-22:12
+	package
+		INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml
+	xmlns:tools
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:3:5-51
+	android:versionCode
+		INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:2:11-69
+uses-permission#android.permission.INTERNET
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:5:5-67
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:5:22-64
+uses-permission#android.permission.ACCESS_WIFI_STATE
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:6:5-76
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:6:22-73
+uses-permission#android.permission.ACCESS_NETWORK_STATE
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:7:5-79
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:7:22-76
+uses-permission#android.permission.WAKE_LOCK
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:8:5-68
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:8:22-65
+uses-permission#android.permission.RECORD_AUDIO
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:9:5-71
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:9:22-68
+uses-permission#android.permission.VIBRATE
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:10:5-66
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:10:22-63
+application
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:12:5-38:19
+INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:12:5-38:19
+MERGED from [com.google.android.material:material:1.10.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/363d8c9be481442ae8a6b948a669eed6/transformed/material-1.10.0/AndroidManifest.xml:22:5-20
+MERGED from [com.google.android.material:material:1.10.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/363d8c9be481442ae8a6b948a669eed6/transformed/material-1.10.0/AndroidManifest.xml:22:5-20
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/417530eccd52536c447ea52a50cf33ce/transformed/constraintlayout-2.0.1/AndroidManifest.xml:9:5-20
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/417530eccd52536c447ea52a50cf33ce/transformed/constraintlayout-2.0.1/AndroidManifest.xml:9:5-20
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:28:5-89
+MERGED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:28:5-89
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:23:5-33:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b3e0769ca0f6a22f7cbb58c5515e09c5/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b3e0769ca0f6a22f7cbb58c5515e09c5/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:24:5-25:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:23:5-53:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/db5d26ca0b1a96b406bd93ec1a48f230/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/db5d26ca0b1a96b406bd93ec1a48f230/transformed/startup-runtime-1.1.1/AndroidManifest.xml:25:5-31:19
+	android:extractNativeLibs
+		INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml
+	android:appComponentFactory
+		ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+	android:supportsRtl
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:18:9-35
+	android:label
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:17:9-41
+	tools:targetApi
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:20:9-29
+	android:icon
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:16:9-43
+	android:allowBackup
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:14:9-36
+	android:theme
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:19:9-48
+	android:usesCleartextTraffic
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:15:9-44
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:13:9-38
+meta-data#com.rayneo.mercury.app
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:23:9-25:36
+	android:value
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:25:13-33
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:24:13-50
+activity#com.meshvision.MeshVisionActivity
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:27:9-36:20
+	android:screenOrientation
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:30:13-50
+	android:exported
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:29:13-36
+	android:configChanges
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:31:13-74
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:28:13-47
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:32:13-35:29
+action#android.intent.action.MAIN
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:33:17-69
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:33:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:34:17-77
+	android:name
+		ADDED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml:34:27-74
+uses-sdk
+INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml
+INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml
+MERGED from [MercuryAndroidSDK-v0.2.5-20260212110627_ceaebc13.aar] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f8f7c2792a4fde92c5ee5a40aa9e2677/transformed/MercuryAndroidSDK-v0.2.5-20260212110627_ceaebc13/AndroidManifest.xml:5:5-7:41
+MERGED from [MercuryAndroidSDK-v0.2.5-20260212110627_ceaebc13.aar] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f8f7c2792a4fde92c5ee5a40aa9e2677/transformed/MercuryAndroidSDK-v0.2.5-20260212110627_ceaebc13/AndroidManifest.xml:5:5-7:41
+MERGED from [androidx.databinding:viewbinding:8.7.3] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f49c61f85ed934ba210a1f7dad1e414e/transformed/viewbinding-8.7.3/AndroidManifest.xml:5:5-44
+MERGED from [androidx.databinding:viewbinding:8.7.3] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f49c61f85ed934ba210a1f7dad1e414e/transformed/viewbinding-8.7.3/AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.material:material:1.10.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/363d8c9be481442ae8a6b948a669eed6/transformed/material-1.10.0/AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.material:material:1.10.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/363d8c9be481442ae8a6b948a669eed6/transformed/material-1.10.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/3032cc005fea4fc545b7bfe8e8eb7865/transformed/appcompat-resources-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/3032cc005fea4fc545b7bfe8e8eb7865/transformed/appcompat-resources-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/417530eccd52536c447ea52a50cf33ce/transformed/constraintlayout-2.0.1/AndroidManifest.xml:5:5-7:41
+MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/417530eccd52536c447ea52a50cf33ce/transformed/constraintlayout-2.0.1/AndroidManifest.xml:5:5-7:41
+MERGED from [androidx.appcompat:appcompat:1.6.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/0b37b9eace45cf7e79d5723afd78e77a/transformed/appcompat-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.appcompat:appcompat:1.6.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/0b37b9eace45cf7e79d5723afd78e77a/transformed/appcompat-1.6.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.emoji2:emoji2-views-helper:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/13d91df0584660366ec70134e42d30a0/transformed/emoji2-views-helper-1.2.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.emoji2:emoji2-views-helper:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/13d91df0584660366ec70134e42d30a0/transformed/emoji2-views-helper-1.2.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/94f96c04f6d23940f7300526a3e51018/transformed/viewpager2-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.viewpager2:viewpager2:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/94f96c04f6d23940f7300526a3e51018/transformed/viewpager2-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.3.6] /Users/vinceroy/.gradle/caches/8.11.1/transforms/e09dfeef7436144ded505fd899bd1d04/transformed/fragment-1.3.6/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.fragment:fragment:1.3.6] /Users/vinceroy/.gradle/caches/8.11.1/transforms/e09dfeef7436144ded505fd899bd1d04/transformed/fragment-1.3.6/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.activity:activity:1.8.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/334d2bcd04ea1d0c4ebc7d10ed97b408/transformed/activity-1.8.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.activity:activity:1.8.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/334d2bcd04ea1d0c4ebc7d10ed97b408/transformed/activity-1.8.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9273299446baf61fdc0edc0cd818076c/transformed/drawerlayout-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.drawerlayout:drawerlayout:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9273299446baf61fdc0edc0cd818076c/transformed/drawerlayout-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/ef97363a93daa5514753a42ac2cbedd2/transformed/coordinatorlayout-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/ef97363a93daa5514753a42ac2cbedd2/transformed/coordinatorlayout-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/8873ca7c9541152daf7092a86ec67297/transformed/dynamicanimation-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.dynamicanimation:dynamicanimation:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/8873ca7c9541152daf7092a86ec67297/transformed/dynamicanimation-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.transition:transition:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/d04b582f964e215caae055b96fa3d5bf/transformed/transition-1.2.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.transition:transition:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/d04b582f964e215caae055b96fa3d5bf/transformed/transition-1.2.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/832dec7d1de8fe7c19a0e7ce17995823/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable-animated:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/832dec7d1de8fe7c19a0e7ce17995823/transformed/vectordrawable-animated-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/05dd34594f29d4932a80a654f5e94710/transformed/vectordrawable-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.vectordrawable:vectordrawable:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/05dd34594f29d4932a80a654f5e94710/transformed/vectordrawable-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b432d763f395395a8b2ecfa3fc67cbb2/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.viewpager:viewpager:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b432d763f395395a8b2ecfa3fc67cbb2/transformed/viewpager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/7f545419d3b038618b01cc9e70379434/transformed/legacy-support-core-utils-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.legacy:legacy-support-core-utils:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/7f545419d3b038618b01cc9e70379434/transformed/legacy-support-core-utils-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/0c17528e72f60b3388693ef46f2bfd3d/transformed/loader-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.loader:loader:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/0c17528e72f60b3388693ef46f2bfd3d/transformed/loader-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9363fb5c3ca09bdf5a645d739c90b7ce/transformed/recyclerview-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.recyclerview:recyclerview:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9363fb5c3ca09bdf5a645d739c90b7ce/transformed/recyclerview-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.customview:customview:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/aadfbc976b7bc8d752d36e827c09d2ba/transformed/customview-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.customview:customview:1.1.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/aadfbc976b7bc8d752d36e827c09d2ba/transformed/customview-1.1.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/c1b7db82679b0bdc3ef97ef37e179796/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.savedstate:savedstate:1.2.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/c1b7db82679b0bdc3ef97ef37e179796/transformed/savedstate-1.2.1/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/112794e6e73ffcbb44493ca9dd1a78d4/transformed/lifecycle-livedata-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/112794e6e73ffcbb44493ca9dd1a78d4/transformed/lifecycle-livedata-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/a1b7f839874caade8e9ab59fddda4396/transformed/lifecycle-livedata-core-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-livedata-core:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/a1b7f839874caade8e9ab59fddda4396/transformed/lifecycle-livedata-core-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:21:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/008a30cd62a03ccde041ab86ed3206df/transformed/lifecycle-viewmodel-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/008a30cd62a03ccde041ab86ed3206df/transformed/lifecycle-viewmodel-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/faf858bf27c1b9c144e0c3fc5309c747/transformed/lifecycle-runtime-2.6.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/faf858bf27c1b9c144e0c3fc5309c747/transformed/lifecycle-runtime-2.6.2/AndroidManifest.xml:5:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/be255d843e1aa9b941a1f5cfc0a67a59/transformed/lifecycle-runtime-ktx-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-runtime-ktx:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/be255d843e1aa9b941a1f5cfc0a67a59/transformed/lifecycle-runtime-ktx-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/ebcc869765867ad7a7da61577337fb8e/transformed/lifecycle-viewmodel-ktx-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/ebcc869765867ad7a7da61577337fb8e/transformed/lifecycle-viewmodel-ktx-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f816bde1143908d746811f117b044424/transformed/lifecycle-viewmodel-savedstate-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f816bde1143908d746811f117b044424/transformed/lifecycle-viewmodel-savedstate-2.6.2/AndroidManifest.xml:20:5-44
+MERGED from [androidx.core:core-ktx:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/721f493b6a76ee80f70f7b0ef1a6874b/transformed/core-ktx-1.12.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.core:core-ktx:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/721f493b6a76ee80f70f7b0ef1a6874b/transformed/core-ktx-1.12.0/AndroidManifest.xml:5:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4ca02a19d3d4704edf87219ea6cbd984/transformed/annotation-experimental-1.3.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.annotation:annotation-experimental:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4ca02a19d3d4704edf87219ea6cbd984/transformed/annotation-experimental-1.3.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9c93433d3108e33f85e1694b946fd156/transformed/cursoradapter-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.cursoradapter:cursoradapter:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/9c93433d3108e33f85e1694b946fd156/transformed/cursoradapter-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.cardview:cardview:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/cc47249d9c87868f9ca1b3a082c67965/transformed/cardview-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.cardview:cardview:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/cc47249d9c87868f9ca1b3a082c67965/transformed/cardview-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/a147c84e5c148fa7eaf961cb4047a7a8/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.interpolator:interpolator:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/a147c84e5c148fa7eaf961cb4047a7a8/transformed/interpolator-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b3e0769ca0f6a22f7cbb58c5515e09c5/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b3e0769ca0f6a22f7cbb58c5515e09c5/transformed/versionedparcelable-1.1.1/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:21:5-44
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/db5d26ca0b1a96b406bd93ec1a48f230/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/db5d26ca0b1a96b406bd93ec1a48f230/transformed/startup-runtime-1.1.1/AndroidManifest.xml:21:5-23:41
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/2a2c8dfa58d4bb8abdbca9c6c9f3263a/transformed/tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.tracing:tracing:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/2a2c8dfa58d4bb8abdbca9c6c9f3263a/transformed/tracing-1.0.0/AndroidManifest.xml:20:5-22:41
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/2b225559330acb13823a49f219f2a532/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.arch.core:core-runtime:2.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/2b225559330acb13823a49f219f2a532/transformed/core-runtime-2.2.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.documentfile:documentfile:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/5ae833f46e0dfe682bb54f075eea19ab/transformed/documentfile-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.documentfile:documentfile:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/5ae833f46e0dfe682bb54f075eea19ab/transformed/documentfile-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f7d7130ad6722d33cade0ab3b4b602ac/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.localbroadcastmanager:localbroadcastmanager:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/f7d7130ad6722d33cade0ab3b4b602ac/transformed/localbroadcastmanager-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.print:print:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/12d2e468604b373cf2d22abc74a7e1a0/transformed/print-1.0.0/AndroidManifest.xml:20:5-44
+MERGED from [androidx.print:print:1.0.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/12d2e468604b373cf2d22abc74a7e1a0/transformed/print-1.0.0/AndroidManifest.xml:20:5-44
+	android:targetSdkVersion
+		INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /Users/vinceroy/Desktop/APP/Glasses/mesh-vision/android-app/app/src/main/AndroidManifest.xml
+provider#androidx.startup.InitializationProvider
+ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:24:9-32:20
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/db5d26ca0b1a96b406bd93ec1a48f230/transformed/startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/vinceroy/.gradle/caches/8.11.1/transforms/db5d26ca0b1a96b406bd93ec1a48f230/transformed/startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
+	tools:node
+		ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:28:13-31
+	android:authorities
+		ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:26:13-68
+	android:exported
+		ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:27:13-37
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:25:13-67
+meta-data#androidx.emoji2.text.EmojiCompatInitializer
+ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.emoji2:emoji2:1.2.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/4182f43019e8dbdf28cc216339a09760/transformed/emoji2-1.2.0/AndroidManifest.xml:30:17-75
+permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+permission#com.meshvision.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+	android:protectionLevel
+		ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+	android:name
+		ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+uses-permission#com.meshvision.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+	android:name
+		ADDED from [androidx.core:core:1.12.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/38c22a3e2e2ed8547423e13bdba73ada/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+meta-data#androidx.lifecycle.ProcessLifecycleInitializer
+ADDED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.lifecycle:lifecycle-process:2.6.2] /Users/vinceroy/.gradle/caches/8.11.1/transforms/545b3d7497697af29451c39adc410b58/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:30:17-78
+meta-data#androidx.profileinstaller.ProfileInstallerInitializer
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+	android:value
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+receiver#androidx.profileinstaller.ProfileInstallReceiver
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+	android:enabled
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+	android:exported
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+	android:permission
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+	android:directBootAware
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+intent-filter#action:name:androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+action#androidx.profileinstaller.action.INSTALL_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+intent-filter#action:name:androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+action#androidx.profileinstaller.action.SKIP_FILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+intent-filter#action:name:androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+action#androidx.profileinstaller.action.SAVE_PROFILE
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+intent-filter#action:name:androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+action#androidx.profileinstaller.action.BENCHMARK_OPERATION
+ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+	android:name
+		ADDED from [androidx.profileinstaller:profileinstaller:1.3.0] /Users/vinceroy/.gradle/caches/8.11.1/transforms/b1e30af28727ae9226650e987d867588/transformed/profileinstaller-1.3.0/AndroidManifest.xml:50:25-92

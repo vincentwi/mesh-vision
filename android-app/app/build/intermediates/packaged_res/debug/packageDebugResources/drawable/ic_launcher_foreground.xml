@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MeshVision icon foreground — green mesh node symbol -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer ring -->
+    <path
+        android:pathData="M54,27 A27,27 0 1,1 53.99,27"
+        android:strokeWidth="2"
+        android:strokeColor="#00FF41"
+        android:fillColor="#00000000"/>
+    <!-- Inner cross -->
+    <path
+        android:pathData="M54,38 L54,70 M38,54 L70,54"
+        android:strokeWidth="2.5"
+        android:strokeColor="#00FF41"
+        android:fillColor="#00000000"/>
+    <!-- Center dot -->
+    <path
+        android:pathData="M54,54 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0"
+        android:fillColor="#00FF41"/>
+    <!-- Corner nodes -->
+    <path
+        android:pathData="M35,35 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:fillColor="#00D4FF"/>
+    <path
+        android:pathData="M73,35 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:fillColor="#00D4FF"/>
+    <path
+        android:pathData="M35,73 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:fillColor="#00D4FF"/>
+    <path
+        android:pathData="M73,73 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:fillColor="#00D4FF"/>
+    <!-- Mesh links from corners to center -->
+    <path
+        android:pathData="M35,35 L54,54 M73,35 L54,54 M35,73 L54,54 M73,73 L54,54"
+        android:strokeWidth="1"
+        android:strokeColor="#00FF4166"
+        android:fillColor="#00000000"/>
+</vector>

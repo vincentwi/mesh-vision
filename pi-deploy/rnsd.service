@@ -1,0 +1,26 @@
+[Unit]
+Description=Reticulum Network Stack Daemon (MeshVision Transport Node)
+Documentation=https://reticulum.network
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+Environment=HOME=/home/pi
+ExecStart=/usr/local/bin/rnsd --service
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+TimeoutStartSec=30
+StandardOutput=journal
+StandardError=journal
+
+# Hardening
+ProtectSystem=full
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

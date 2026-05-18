@@ -1,0 +1,9 @@
+.venv/
+*.pyc
+__pycache__/
+backend/lxmf_storage/
+backend/meshvision_identity
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties

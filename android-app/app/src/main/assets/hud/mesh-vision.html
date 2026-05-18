@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=640,initial-scale=1.0">
+<title>MESH VISION // AR HUD</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --neon:#00ff41;--cyan:#00d4ff;--orange:#ff6b00;--red:#ff0040;
+  --bg:#000;--panel:rgba(0,20,0,0.6);--border:rgba(0,255,65,0.3);
+  --font:'JetBrains Mono',monospace;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--font);color:var(--neon);font-size:11px;}
+
+/* CRT Scanlines */
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,65,0.03) 3px,rgba(0,255,65,0.03) 4px);
+  pointer-events:none;z-index:9998;}
+/* Vignette */
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.6) 100%);
+  pointer-events:none;z-index:9999;}
+
+#hud{width:100%;height:100%;position:relative;display:grid;
+  grid-template-rows:80px 1fr 30px;grid-template-columns:280px 1fr 200px;}
+
+/* Spectrum Analyzer - top strip */
+#spectrum{grid-row:1;grid-column:1/4;background:var(--panel);border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-end;padding:2px 8px 14px 8px;position:relative;overflow:hidden;}
+#spectrum-label{position:absolute;top:3px;left:10px;font-size:9px;color:var(--cyan);letter-spacing:2px;
+  text-shadow:0 0 6px var(--cyan);opacity:0.8;}
+#spectrum-bands{display:flex;width:100%;height:100%;align-items:flex-end;gap:0;}
+.spec-band{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end;}
+.spec-band-label{font-size:7px;color:var(--neon);opacity:0.5;margin-top:2px;position:absolute;bottom:-12px;}
+.spec-bar-wrap{flex:1;display:flex;align-items:flex-end;width:100%;height:100%;position:relative;}
+.spec-bar{width:100%;min-width:2px;max-width:12px;margin:0 auto;border-radius:1px 1px 0 0;
+  transition:height 0.4s ease,background 0.4s ease;box-shadow:0 0 4px currentColor;}
+.band-sep{width:2px;background:var(--cyan);opacity:0.3;height:100%;margin:0 4px;flex-shrink:0;}
+
+/* Directional Signal Bars - overlaid on spectrum top */
+#signal-bars-overlay{position:absolute;top:0;left:0;right:0;bottom:0;z-index:5;
+  display:flex;flex-direction:column;justify-content:flex-start;padding:2px 8px 0;
+  pointer-events:none;}
+#signal-bars-title{font-size:7px;color:var(--cyan);letter-spacing:1px;opacity:0.7;margin-bottom:1px;text-align:right;}
+#signal-bars-list{display:flex;flex-direction:column;gap:1px;}
+.sig-bar-item{display:flex;align-items:center;gap:4px;font-size:8px;height:12px;opacity:0.95;}
+.sig-bar-name{width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--neon);text-align:right;}
+.sig-bar-fill-wrap{flex:1;height:8px;background:rgba(0,20,0,0.85);border:1px solid rgba(0,255,65,0.2);border-radius:2px;overflow:hidden;position:relative;}
+.sig-bar-fill{height:100%;border-radius:1px;transition:width 0.4s ease;background:var(--neon);box-shadow:0 0 6px var(--neon);}
+.sig-bar-fill.strongest{animation:sig-pulse 1.5s ease-in-out infinite;}
+.sig-bar-dbm{width:45px;color:var(--cyan);font-size:7px;text-align:left;}
+.sig-bar-boost{width:28px;color:var(--orange);font-size:7px;text-align:right;}
+#sig-no-signal{font-size:8px;color:rgba(0,255,65,0.25);text-align:center;padding:4px;display:none;}
+@keyframes sig-pulse{0%,100%{box-shadow:0 0 4px var(--neon);}50%{box-shadow:0 0 12px var(--neon),0 0 20px rgba(0,255,65,0.3);}}
+
+/* Radar - bottom-left */
+#radar-wrap{grid-row:2;grid-column:1;position:relative;display:flex;align-items:center;justify-content:center;
+  border-right:1px solid var(--border);}
+#radar-canvas{position:absolute;}
+#radar-label{position:absolute;top:6px;left:10px;font-size:9px;color:var(--neon);letter-spacing:2px;
+  text-shadow:0 0 6px var(--neon);opacity:0.8;z-index:2;}
+#radar-tooltip{position:absolute;background:rgba(0,20,0,0.9);border:1px solid var(--neon);
+  padding:3px 7px;font-size:9px;color:var(--neon);pointer-events:none;display:none;z-index:10;
+  text-shadow:0 0 4px var(--neon);white-space:nowrap;}
+
+/* Signal Strength Meter (floating on radar hover/click) */
+#signal-meter{position:absolute;z-index:15;display:none;pointer-events:none;
+  background:rgba(0,12,0,0.92);border:1px solid var(--neon);padding:6px 8px;
+  min-width:130px;border-radius:3px;font-size:8px;
+  box-shadow:0 0 12px rgba(0,255,65,0.2);}
+#signal-meter .sm-name{color:var(--cyan);font-weight:600;font-size:9px;margin-bottom:3px;}
+#signal-meter .sm-bar-wrap{width:100%;height:10px;background:rgba(0,20,0,0.8);border:1px solid var(--border);
+  border-radius:2px;margin:3px 0;overflow:hidden;}
+#signal-meter .sm-bar{height:100%;border-radius:1px;transition:width 0.3s ease;}
+#signal-meter .sm-row{display:flex;justify-content:space-between;margin:1px 0;color:var(--neon);}
+#signal-meter .sm-label{opacity:0.6;}
+#signal-meter .sm-val{color:var(--cyan);}
+
+/* Topology - center */
+#topo-wrap{grid-row:2;grid-column:2;position:relative;overflow:hidden;}
+#topo-canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+#topo-label{position:absolute;top:6px;left:10px;font-size:9px;color:var(--orange);letter-spacing:2px;
+  text-shadow:0 0 6px var(--orange);opacity:0.8;z-index:2;}
+#node-detail{position:absolute;top:30px;left:10px;background:rgba(0,10,0,0.85);border:1px solid var(--orange);
+  padding:6px 10px;font-size:9px;color:var(--orange);display:none;z-index:5;min-width:140px;
+  text-shadow:0 0 3px var(--orange);}
+#node-detail div{margin:2px 0;}
+
+/* Message Feed - right */
+#feed-wrap{grid-row:2;grid-column:3;border-left:1px solid var(--border);display:flex;flex-direction:column;
+  background:var(--panel);}
+#feed-label{font-size:9px;color:var(--cyan);letter-spacing:2px;padding:6px 8px 4px;
+  text-shadow:0 0 6px var(--cyan);opacity:0.8;border-bottom:1px solid var(--border);flex-shrink:0;}
+#feed{flex:1;overflow-y:auto;padding:4px 6px;scrollbar-width:thin;scrollbar-color:var(--neon) transparent;}
+#feed::-webkit-scrollbar{width:3px;}
+#feed::-webkit-scrollbar-thumb{background:var(--neon);border-radius:2px;}
+.msg{margin:4px 0;padding:4px 6px;background:rgba(0,255,65,0.05);border-left:2px solid var(--neon);
+  border-radius:0 3px 3px 0;font-size:9px;word-break:break-word;}
+.msg .msg-from{color:var(--cyan);font-weight:600;}
+.msg .msg-meta{color:rgba(0,255,65,0.5);font-size:7px;margin-top:2px;}
+.msg .msg-content{color:var(--neon);margin:2px 0;}
+.msg .msg-latency{color:var(--orange);font-size:7px;}
+.msg.delivered .msg-status{color:var(--neon);}
+.msg.undelivered .msg-status{color:var(--red);}
+
+/* Chat Input */
+#chat-input-wrap{flex-shrink:0;display:flex;border-top:1px solid var(--border);padding:4px;}
+#chat-input{flex:1;background:rgba(0,20,0,0.8);border:1px solid var(--border);color:var(--neon);
+  font-family:var(--font);font-size:10px;padding:4px 6px;outline:none;}
+#chat-input:focus{border-color:var(--neon);box-shadow:0 0 6px rgba(0,255,65,0.3);}
+#chat-send{background:var(--panel);border:1px solid var(--neon);color:var(--neon);font-family:var(--font);
+  font-size:9px;padding:4px 8px;cursor:pointer;margin-left:3px;}
+#chat-send:hover{background:rgba(0,255,65,0.15);text-shadow:0 0 6px var(--neon);}
+
+/* Stats Bar - bottom */
+#stats{grid-row:3;grid-column:1/4;background:var(--panel);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:16px;font-size:9px;color:var(--neon);}
+.stat{display:flex;align-items:center;gap:4px;opacity:0.9;}
+.stat-val{color:var(--cyan);font-weight:600;}
+#ws-status{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);
+  transition:all 0.3s;}
+#ws-status.connected{background:var(--neon);box-shadow:0 0 8px var(--neon);}
+.stat-sep{width:1px;height:14px;background:var(--border);}
+#pause-indicator{color:var(--red);font-weight:600;display:none;text-shadow:0 0 8px var(--red);}
+#heading-stat{color:var(--orange);}
+#layer-indicators{margin-left:auto;display:flex;gap:6px;}
+.layer-ind{padding:1px 5px;border:1px solid var(--border);border-radius:2px;opacity:0.4;font-size:8px;cursor:pointer;}
+.layer-ind.active{opacity:1;border-color:var(--neon);text-shadow:0 0 4px var(--neon);}
+
+/* Vital Signs Panel */
+#vital-signs-panel{position:absolute;bottom:10px;left:10px;background:rgba(0,8,0,0.88);
+  border:1px solid rgba(255,0,128,0.4);padding:8px 12px;z-index:10;min-width:160px;
+  border-radius:4px;font-size:9px;box-shadow:0 0 12px rgba(255,0,128,0.15);}
+#vital-signs-panel .vs-title{color:#ff00ff;font-size:8px;letter-spacing:2px;margin-bottom:4px;
+  text-shadow:0 0 6px rgba(255,0,255,0.6);opacity:0.9;}
+#vital-signs-panel .vs-row{display:flex;align-items:center;gap:6px;margin:3px 0;}
+#vital-signs-panel .vs-icon{font-size:14px;width:18px;text-align:center;}
+#vital-signs-panel .vs-value{color:var(--cyan);font-weight:600;font-size:12px;min-width:42px;}
+#vital-signs-panel .vs-label{color:rgba(0,255,65,0.5);font-size:7px;letter-spacing:1px;}
+#vital-signs-panel .vs-conf-bar{width:40px;height:4px;background:rgba(0,20,0,0.8);
+  border:1px solid rgba(0,255,65,0.2);border-radius:2px;overflow:hidden;}
+#vital-signs-panel .vs-conf-fill{height:100%;border-radius:1px;transition:width 0.5s ease;}
+#vital-signs-panel .vs-presence{color:var(--neon);margin-top:4px;font-size:8px;border-top:1px solid rgba(0,255,65,0.15);padding-top:4px;}
+#vital-signs-panel .vs-motion-bar{width:80px;height:5px;background:rgba(0,20,0,0.8);
+  border:1px solid rgba(0,255,65,0.2);border-radius:2px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px;}
+#vital-signs-panel .vs-motion-fill{height:100%;border-radius:1px;transition:width 0.5s ease;
+  background:linear-gradient(90deg,#00ff41,#ffcc00,#ff0040);}
+@keyframes heart-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.3);}}
+@keyframes breathe-anim{0%,100%{transform:scale(0.8);opacity:0.6;}50%{transform:scale(1.2);opacity:1;}}
+.vs-heart-pulse{display:inline-block;animation:heart-pulse 0.8s ease-in-out infinite;}
+.vs-breathe-anim{display:inline-block;animation:breathe-anim 3.75s ease-in-out infinite;}
+
+/* SNR status indicator */
+#snr-status{font-size:8px;font-weight:600;letter-spacing:1px;}
+
+/* BLE density ring pulse */
+@keyframes ble-breathe{0%,100%{opacity:0.7;}50%{opacity:1.0;}}
+
+/* Presence blob pulse */
+@keyframes blob-pulse{0%,100%{transform:scale(1);opacity:0.7;}50%{transform:scale(1.15);opacity:1.0;}}
+
+/* RSSI Waveform canvas */
+#rssi-waveform-wrap{margin-top:6px;border-top:1px solid rgba(0,255,65,0.15);padding-top:4px;}
+#rssi-waveform-label{font-size:7px;color:var(--neon);letter-spacing:1px;opacity:0.6;margin-bottom:2px;}
+#rssi-waveform{width:180px;height:36px;background:#000;border:1px solid rgba(0,255,65,0.2);border-radius:2px;}
+
+/* Room change flash */
+#room-change-indicator{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:14px;font-weight:600;color:#ffcc00;letter-spacing:3px;
+  text-shadow:0 0 12px rgba(255,204,0,0.8);z-index:20;display:none;
+  animation:room-flash 0.5s ease-in-out infinite alternate;}
+@keyframes room-flash{0%{opacity:0.6;}100%{opacity:1.0;}}
+
+/* Anomaly marker */
+@keyframes anomaly-fade{0%{opacity:1;transform:scale(1.2);}100%{opacity:0;transform:scale(0.5);}}
+
+/* Responsive for glasses viewport */
+@media(max-width:700px){
+  #hud{grid-template-columns:180px 1fr 140px;grid-template-rows:50px 1fr 24px;}
+  #spectrum{padding:2px 4px 10px 4px;}
+  #feed-wrap,#radar-wrap{font-size:8px;}
+  .msg{font-size:8px;}
+}
+</style>
+</head>
+<body>
+<div id="hud">
+  <!-- Spectrum Analyzer -->
+  <div id="spectrum">
+    <div id="spectrum-label">◈ SPECTRUM ANALYZER</div>
+    <div id="spectrum-bands"></div>
+    <!-- Directional Signal Bars overlay -->
+    <div id="signal-bars-overlay">
+      <div id="signal-bars-title">▶ IN VIEW</div>
+      <div id="signal-bars-list"></div>
+      <div id="sig-no-signal">— NO SIGNALS IN VIEW —</div>
+    </div>
+  </div>
+
+  <!-- Radar -->
+  <div id="radar-wrap">
+    <div id="radar-label">◈ RADAR</div>
+    <canvas id="radar-canvas"></canvas>
+    <div id="radar-tooltip"></div>
+    <div id="signal-meter">
+      <div class="sm-name"></div>
+      <div class="sm-bar-wrap"><div class="sm-bar"></div></div>
+      <div class="sm-row"><span class="sm-label">RSSI</span><span class="sm-val" id="sm-rssi"></span></div>
+      <div class="sm-row"><span class="sm-label">Dir Boost</span><span class="sm-val" id="sm-boost"></span></div>
+      <div class="sm-row"><span class="sm-label">Channel</span><span class="sm-val" id="sm-chan"></span></div>
+      <div class="sm-row"><span class="sm-label">Type</span><span class="sm-val" id="sm-type"></span></div>
+    </div>
+  </div>
+
+  <!-- Topology -->
+  <div id="topo-wrap">
+    <div id="topo-label">◈ MESH TOPOLOGY</div>
+    <canvas id="topo-canvas"></canvas>
+    <div id="node-detail"></div>
+    <!-- Vital Signs Panel -->
+    <div id="vital-signs-panel">
+      <div class="vs-title">◈ VITAL SIGNS</div>
+      <div class="vs-row">
+        <span class="vs-icon vs-heart-pulse" id="vs-heart-icon" style="color:#ff0040;">♡</span>
+        <span class="vs-value" id="vs-heart-val">--</span>
+        <span class="vs-label">BPM</span>
+        <div class="vs-conf-bar"><div class="vs-conf-fill" id="vs-heart-conf" style="width:0%;background:#ff0040;"></div></div>
+      </div>
+      <div class="vs-row">
+        <span class="vs-icon vs-breathe-anim" id="vs-breathe-icon" style="color:#00d4ff;">⟠</span>
+        <span class="vs-value" id="vs-breathe-val">--</span>
+        <span class="vs-label">BPM</span>
+        <div class="vs-conf-bar"><div class="vs-conf-fill" id="vs-breathe-conf" style="width:0%;background:#00d4ff;"></div></div>
+      </div>
+      <div class="vs-row" style="margin-top:2px;">
+        <span class="vs-label">SNR</span>
+        <div class="vs-motion-bar" style="width:60px;"><div class="vs-conf-fill" id="vs-snr-fill" style="width:0%;background:linear-gradient(90deg,#ff0040,#ffcc00,#00ff41);"></div></div>
+        <span style="color:var(--cyan);font-size:8px;" id="vs-snr-val">--dB</span>
+      </div>
+      <div class="vs-presence" id="vs-presence">ROOM: -- </div>
+      <div class="vs-row" style="margin-top:2px;">
+        <span class="vs-label">MOTION</span>
+        <div class="vs-motion-bar"><div class="vs-motion-fill" id="vs-motion-fill" style="width:0%;"></div></div>
+        <span style="color:var(--cyan);font-size:8px;" id="vs-motion-pct">0%</span>
+      </div>
+      <div class="vs-row" style="margin-top:2px;">
+        <span class="vs-label">ACTIVITY</span>
+        <span style="color:var(--orange);font-size:9px;font-weight:600;" id="vs-activity">--</span>
+      </div>
+      <div id="rssi-waveform-wrap">
+        <div id="rssi-waveform-label">RSSI WAVEFORM</div>
+        <canvas id="rssi-waveform" width="180" height="36"></canvas>
+      </div>
+    </div>
+    <!-- Room Change Indicator -->
+    <div id="room-change-indicator">⚠ ROOM CHANGE</div>
+  </div>
+
+  <!-- Message Feed -->
+  <div id="feed-wrap">
+    <div id="feed-label">◈ MESH FEED</div>
+    <div id="feed"></div>
+    <div id="chat-input-wrap">
+      <input id="chat-input" type="text" placeholder="msg..." maxlength="200">
+      <button id="chat-send">TX</button>
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div id="stats">
+    <div id="ws-status"></div>
+    <div class="stat">WiFi:<span class="stat-val" id="s-wifi">0</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat">BLE:<span class="stat-val" id="s-ble">0</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat">Mesh:<span class="stat-val" id="s-mesh">0</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat">Links:<span class="stat-val" id="s-links">0</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat">FPS:<span class="stat-val" id="s-fps">0</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat" id="heading-stat">HDG:<span class="stat-val" id="s-hdg">---</span>°</div>
+    <div class="stat-sep"></div>
+    <div class="stat" id="snr-status" style="color:#00d4ff;">SNR:<span class="stat-val" id="s-snr">--</span>dB</div>
+    <div class="stat-sep"></div>
+    <div class="stat">Pres:<span class="stat-val" id="s-pres">0</span></div>
+    <div class="stat-sep"></div>
+    <div class="stat" style="color:rgba(0,255,65,0.5);" id="s-room-hash">RM:------</div>
+    <div id="pause-indicator">⏸ PAUSED</div>
+    <div id="layer-indicators">
+      <div class="layer-ind active" data-layer="radar">1:RAD</div>
+      <div class="layer-ind active" data-layer="spectrum">2:SPE</div>
+      <div class="layer-ind active" data-layer="topology">3:TOP</div>
+      <div class="layer-ind active" data-layer="all">4:ALL</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== GLOBAL STATE =====
+const S = {
+  wifi: [], ble: [], meshNodes: [], meshLinks: [], meshMessages: [],
+  camera: { active: false, yaw_estimate: 0, pitch_estimate: 0, heading: 0, angular_velocity: 0, movement_magnitude: 0 },
+  wifiHeatmap: {},       // sector '0'-'11' -> RSSI
+  bleDensity: { total: 0, per_sector: [0,0,0,0,0,0,0,0,0,0,0,0] },
+  sharedUsers: [],
+  wsConnected: false, paused: false,
+  layers: { radar: true, spectrum: true, topology: true },
+  selectedNode: null, selectedBlip: null,
+  // Topo pan/zoom
+  topoPan: { x: 0, y: 0 }, topoZoom: 1, topoDragging: false, topoDragStart: { x: 0, y: 0 },
+  // Force graph nodes/links
+  graphNodes: [], graphLinks: [], particles: [],
+  // Radar blips
+  radarBlips: [],
+  // FPS
+  frameCount: 0, lastFpsTime: performance.now(), fps: 0,
+  // Messages
+  allMessages: [],
+  // Reconnect
+  wsReconnectTimer: null,
+  // BLE ring breathe phase
+  bleBreathPhase: 0,
+  // Sensing data (new payload)
+  sensing: {
+    fast_rssi: {
+      current_rssi: -70, noise_floor: -92, snr: 22,
+      breathing: { rate_bpm: 0, confidence: 0, amplitude: 0 },
+      heart_rate: { rate_bpm: 0, confidence: 0, amplitude: 0 },
+      motion: { level: 0, variance_1s: 0, is_moving: false },
+      presence: { detected: false, confidence: 0, duration_s: 0 },
+      rssi_sparkline: []
+    },
+    environment: {
+      ap_count: 0, channel_map: {}, density_sectors: [0,0,0,0,0,0,0,0,0,0,0,0],
+      signal_diversity: 0, room_fingerprint_hash: '------', room_changed: false,
+      strongest_aps: [], anomalies: []
+    },
+    presence: {
+      person_count: 0, total_confidence: 0, activity: 'unknown',
+      presence_map: [0,0,0,0,0,0,0,0,0,0,0,0],
+      blobs: [], duration_s: 0
+    }
+  },
+  // Anomaly markers with timestamps for fade
+  anomalyMarkers: [],
+  // Room change flash timer
+  roomChangeTimer: null
+};
+
+// ===== UTILITY =====
+function hashCode(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+function rssiToDistance(rssi) {
+  const clamped = Math.max(-100, Math.min(-20, rssi));
+  return 0.1 + 0.9 * (1 - (clamped + 100) / 80);
+}
+
+function rssiToRadius(rssi) {
+  const clamped = Math.max(-100, Math.min(-20, rssi));
+  return 2 + 6 * ((clamped + 100) / 80);
+}
+
+function relativeTime(ts) {
+  if (!ts) return '';
+  const now = Date.now();
+  let t;
+  if (typeof ts === 'number') { t = ts > 1e12 ? ts : ts * 1000; }
+  else { t = new Date(ts).getTime(); }
+  const diff = Math.max(0, Math.floor((now - t) / 1000));
+  if (diff < 5) return 'now';
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  return Math.floor(diff / 3600) + 'h ago';
+}
+
+function qualityColor(q) {
+  if (q > 0.7) return '#00ff41';
+  if (q > 0.4) return '#ffcc00';
+  return '#ff0040';
+}
+
+function channelToFreq(ch) {
+  if (ch <= 14) return 2412 + (ch - 1) * 5;
+  return 5000 + ch * 5;
+}
+
+function degToRad(d) { return d * Math.PI / 180; }
+function radToDeg(r) { return r * 180 / Math.PI; }
+
+function angleDiffSigned(a, b) {
+  let d = a - b;
+  while (d > 180) d -= 360;
+  while (d < -180) d += 360;
+  return d;
+}
+
+function rssiToColor(rssi) {
+  const clamped = Math.max(-100, Math.min(-30, rssi));
+  const t = (clamped + 100) / 70; // 0=weak 1=strong
+  if (t < 0.5) {
+    const f = t * 2;
+    return `rgb(${Math.round(f*255)},${Math.round(255)},0)`;
+  } else {
+    const f = (t - 0.5) * 2;
+    return `rgb(255,${Math.round(255*(1-f))},0)`;
+  }
+}
+
+function rssiPct(rssi) {
+  return Math.max(0, Math.min(100, ((rssi + 100) / 70) * 100));
+}
+
+// ===== SPECTRUM SETUP =====
+const CHANNELS_24 = [1,2,3,4,5,6,7,8,9,10,11,12,13,14];
+const CHANNELS_5 = [36,40,44,48,52,56,60,64,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165];
+const ALL_CHANNELS = [...CHANNELS_24, 'sep', ...CHANNELS_5];
+const specBands = document.getElementById('spectrum-bands');
+const specBars = {};
+
+ALL_CHANNELS.forEach(ch => {
+  if (ch === 'sep') {
+    const sep = document.createElement('div');
+    sep.className = 'band-sep';
+    specBands.appendChild(sep);
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'spec-band';
+  wrap.style.position = 'relative';
+  const barWrap = document.createElement('div');
+  barWrap.className = 'spec-bar-wrap';
+  const bar = document.createElement('div');
+  bar.className = 'spec-bar';
+  bar.style.height = '0px';
+  bar.style.background = '#00ff41';
+  barWrap.appendChild(bar);
+  wrap.appendChild(barWrap);
+  const lbl = document.createElement('div');
+  lbl.className = 'spec-band-label';
+  lbl.textContent = ch;
+  wrap.appendChild(lbl);
+  specBands.appendChild(wrap);
+  specBars[ch] = bar;
+});
+
+function updateSpectrum() {
+  const channelMax = {};
+  S.wifi.forEach(ap => {
+    const ch = ap.channel;
+    if (!ch) return;
+    if (!channelMax[ch] || ap.rssi > channelMax[ch]) channelMax[ch] = ap.rssi;
+  });
+  ALL_CHANNELS.forEach(ch => {
+    if (ch === 'sep') return;
+    const bar = specBars[ch];
+    if (!bar) return;
+    const rssi = channelMax[ch];
+    if (rssi === undefined) {
+      bar.style.height = '1px';
+      bar.style.background = 'rgba(0,255,65,0.2)';
+      bar.style.boxShadow = 'none';
+      return;
+    }
+    const clamped = Math.max(-100, Math.min(-20, rssi));
+    const pct = ((clamped + 100) / 80) * 100;
+    bar.style.height = Math.max(2, pct) + '%';
+    let color;
+    if (rssi < -70) { color = '#00ff41'; }
+    else if (rssi < -50) { color = '#ffcc00'; }
+    else { color = '#ff0040'; }
+    bar.style.background = color;
+    bar.style.boxShadow = `0 0 6px ${color}`;
+  });
+}
+
+// ===== FEATURE 7: DIRECTIONAL SIGNAL BARS =====
+const sigBarsList = document.getElementById('signal-bars-list');
+const sigNoSignal = document.getElementById('sig-no-signal');
+
+function updateSignalBars() {
+  const heading = S.camera.heading || 0;
+  // Collect all wifi+ble with direction_boost
+  const signals = [];
+  S.wifi.forEach(ap => {
+    const boost = ap.direction_boost !== undefined ? ap.direction_boost : 0;
+    if (boost > 0.3) {
+      signals.push({ name: ap.ssid || ap.bssid || '???', rssi: ap.rssi, boost, type: 'W', channel: ap.channel });
+    }
+  });
+  S.ble.forEach(dev => {
+    const boost = dev.direction_boost !== undefined ? dev.direction_boost : 0;
+    if (boost > 0.3) {
+      signals.push({ name: dev.name || dev.address || '???', rssi: dev.rssi, boost, type: 'B', channel: '' });
+    }
+  });
+  // Sort by RSSI strongest first
+  signals.sort((a, b) => b.rssi - a.rssi);
+  const top5 = signals.slice(0, 5);
+
+  // Clear and rebuild
+  sigBarsList.innerHTML = '';
+  if (top5.length === 0) {
+    sigNoSignal.style.display = 'block';
+    return;
+  }
+  sigNoSignal.style.display = 'none';
+
+  top5.forEach((sig, i) => {
+    const item = document.createElement('div');
+    item.className = 'sig-bar-item';
+    const pct = rssiPct(sig.rssi);
+    const color = sig.rssi > -50 ? '#00ff41' : sig.rssi > -70 ? '#ffcc00' : '#ff6b00';
+    item.innerHTML = `
+      <span class="sig-bar-name">${sig.name}</span>
+      <div class="sig-bar-fill-wrap">
+        <div class="sig-bar-fill ${i === 0 ? 'strongest' : ''}" style="width:${pct}%;background:${color};box-shadow:0 0 6px ${color};"></div>
+      </div>
+      <span class="sig-bar-dbm">${sig.rssi}dBm</span>
+      <span class="sig-bar-boost">${Math.round(sig.boost * 100)}%</span>
+    `;
+    sigBarsList.appendChild(item);
+  });
+}
+
+// ===== RADAR =====
+const radarCanvas = document.getElementById('radar-canvas');
+const radarCtx = radarCanvas.getContext('2d');
+const radarTooltip = document.getElementById('radar-tooltip');
+const signalMeter = document.getElementById('signal-meter');
+let radarAngle = 0;
+let radarSize = 260;
+let radarCx, radarCy, radarR;
+
+function resizeRadar() {
+  const wrap = document.getElementById('radar-wrap');
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  radarSize = Math.min(w, h) - 20;
+  radarCanvas.width = w * devicePixelRatio;
+  radarCanvas.height = h * devicePixelRatio;
+  radarCanvas.style.width = w + 'px';
+  radarCanvas.style.height = h + 'px';
+  radarCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  radarCx = w / 2;
+  radarCy = h / 2;
+  radarR = radarSize / 2;
+}
+
+function buildRadarBlips() {
+  const blips = [];
+  S.wifi.forEach(ap => {
+    const azDeg = ap.azimuth_deg !== undefined ? ap.azimuth_deg : (hashCode(ap.bssid || ap.ssid || '') % 360);
+    const az = degToRad(azDeg);
+    const dist = rssiToDistance(ap.rssi);
+    const r = rssiToRadius(ap.rssi);
+    const boost = ap.direction_boost !== undefined ? ap.direction_boost : 0;
+    blips.push({ type: 'wifi', name: ap.ssid || ap.bssid, rssi: ap.rssi, azimuth: az, azimuthDeg: azDeg,
+      distance: dist, radius: r, color: '#00ff41', glow: ap.rssi > -60,
+      directionBoost: boost, channel: ap.channel, frequency: ap.frequency });
+  });
+  S.ble.forEach(dev => {
+    const azDeg = dev.azimuth_deg !== undefined ? dev.azimuth_deg : (hashCode(dev.address || dev.name || '') % 360);
+    const az = degToRad(azDeg);
+    const dist = rssiToDistance(dev.rssi);
+    const r = rssiToRadius(dev.rssi);
+    const boost = dev.direction_boost !== undefined ? dev.direction_boost : 0;
+    blips.push({ type: 'ble', name: dev.name || dev.address, rssi: dev.rssi, azimuth: az, azimuthDeg: azDeg,
+      distance: dist, radius: r, color: '#00d4ff', glow: dev.rssi > -60,
+      directionBoost: boost, channel: '', frequency: '' });
+  });
+  S.meshNodes.forEach(node => {
+    let az, dist, azDeg;
+    if (node.position && node.position.azimuth !== undefined) {
+      azDeg = node.position.azimuth;
+      az = degToRad(azDeg);
+      dist = node.position.distance !== undefined ? Math.min(1, node.position.distance / 100) : rssiToDistance(node.rssi_estimate || -70);
+    } else {
+      azDeg = hashCode(node.id || node.name || '') % 360;
+      az = degToRad(azDeg);
+      dist = rssiToDistance(node.rssi_estimate || -70);
+    }
+    const r = rssiToRadius(node.rssi_estimate || -70);
+    blips.push({ type: 'mesh', name: node.name || node.id, rssi: node.rssi_estimate, azimuth: az, azimuthDeg: azDeg,
+      distance: dist, radius: r, color: '#ff6b00', glow: (node.rssi_estimate || -70) > -60,
+      directionBoost: 0, channel: '', frequency: '' });
+  });
+  S.radarBlips = blips;
+}
+
+// ===== FEATURE 3: WIFI HEATMAP =====
+function drawWifiHeatmap(ctx) {
+  const hm = S.wifiHeatmap;
+  if (!hm || Object.keys(hm).length === 0) return;
+  for (let i = 0; i < 12; i++) {
+    const rssi = hm[String(i)];
+    if (rssi === undefined || rssi === null) continue;
+    const startAngle = degToRad(i * 30 - 90);
+    const endAngle = degToRad((i + 1) * 30 - 90);
+    // Color by RSSI: green=weak, yellow=medium, red=strong
+    let color;
+    if (rssi > -50) color = 'rgba(255,0,64,0.15)';
+    else if (rssi > -70) color = 'rgba(255,200,0,0.12)';
+    else color = 'rgba(0,255,65,0.08)';
+    ctx.beginPath();
+    ctx.moveTo(radarCx, radarCy);
+    ctx.arc(radarCx, radarCy, radarR, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+}
+
+// ===== FEATURE 4: BLE DENSITY RING =====
+function drawBleDensityRing(ctx, dt) {
+  const density = S.bleDensity;
+  if (!density || !density.per_sector) return;
+  const maxCount = Math.max(1, ...density.per_sector);
+  S.bleBreathPhase += dt * 2;
+  const breathScale = 1 + 0.08 * Math.sin(S.bleBreathPhase);
+
+  for (let i = 0; i < 12; i++) {
+    const count = density.per_sector[i] || 0;
+    if (count === 0) continue;
+    const startAngle = degToRad(i * 30 - 90);
+    const endAngle = degToRad((i + 1) * 30 - 90);
+    const innerR = radarR + 3;
+    const outerR = innerR + (count / maxCount) * 18 * breathScale;
+    const alpha = 0.3 + (count / maxCount) * 0.5;
+
+    ctx.beginPath();
+    ctx.arc(radarCx, radarCy, outerR, startAngle, endAngle);
+    ctx.arc(radarCx, radarCy, innerR, endAngle, startAngle, true);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(0,212,255,${alpha})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(0,212,255,${alpha * 0.6})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+}
+
+// ===== FEATURE 1: DIRECTIONAL VISION CONE =====
+function drawVisionCone(ctx) {
+  const heading = S.camera.heading || 0;
+  // Convert to canvas angle (0=right, going clockwise) with -90 offset (0=up)
+  const centerAngle = degToRad(heading - 90);
+  const halfCone = degToRad(30);
+  const startAngle = centerAngle - halfCone;
+  const endAngle = centerAngle + halfCone;
+
+  // Fill cone
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.arc(radarCx, radarCy, radarR + 2, startAngle, endAngle);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 255, 65, 0.08)';
+  ctx.fill();
+
+  // Inner brighter fill
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.arc(radarCx, radarCy, radarR * 0.6, startAngle, endAngle);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 255, 65, 0.05)';
+  ctx.fill();
+
+  // Edge lines
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.lineTo(radarCx + Math.cos(startAngle) * (radarR + 2), radarCy + Math.sin(startAngle) * (radarR + 2));
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.lineTo(radarCx + Math.cos(endAngle) * (radarR + 2), radarCy + Math.sin(endAngle) * (radarR + 2));
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Center direction line (brighter)
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.lineTo(radarCx + Math.cos(centerAngle) * (radarR * 0.95), radarCy + Math.sin(centerAngle) * (radarR * 0.95));
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.2)';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([4, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function isBlipInCone(blipAzDeg) {
+  const heading = S.camera.heading || 0;
+  const diff = Math.abs(angleDiffSigned(blipAzDeg, heading));
+  return diff <= 30;
+}
+
+// ===== FEATURE 2: COMPASS ROSE =====
+function drawCompass(ctx) {
+  const heading = S.camera.heading || 0;
+  const size = 28;
+  const cx = radarCx + radarR - size - 8;
+  const cy = radarCy + radarR - size - 8;
+
+  // Background circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, size, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0, 12, 0, 0.8)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Heading rotation (rotate compass so heading is up)
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(degToRad(-heading));
+
+  // Cardinal ticks and labels
+  const dirs = [
+    { label: 'N', angle: -Math.PI / 2, primary: true },
+    { label: 'E', angle: 0, primary: false },
+    { label: 'S', angle: Math.PI / 2, primary: false },
+    { label: 'W', angle: Math.PI, primary: false },
+  ];
+  dirs.forEach(d => {
+    // Tick
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(d.angle) * (size - 8), Math.sin(d.angle) * (size - 8));
+    ctx.lineTo(Math.cos(d.angle) * (size - 3), Math.sin(d.angle) * (size - 3));
+    ctx.strokeStyle = d.primary ? '#ff0040' : 'rgba(0,255,65,0.6)';
+    ctx.lineWidth = d.primary ? 2 : 1;
+    ctx.stroke();
+
+    // Label
+    ctx.font = `${d.primary ? '600 ' : ''}8px "JetBrains Mono", monospace`;
+    ctx.fillStyle = d.primary ? '#ff0040' : 'rgba(0,255,65,0.7)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(d.label, Math.cos(d.angle) * (size - 15), Math.sin(d.angle) * (size - 15));
+  });
+
+  // Minor ticks (NE, SE, SW, NW)
+  for (let i = 0; i < 8; i++) {
+    if (i % 2 === 0) continue; // skip cardinals
+    const angle = (i * 45 - 90) * Math.PI / 180;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(angle) * (size - 5), Math.sin(angle) * (size - 5));
+    ctx.lineTo(Math.cos(angle) * (size - 2), Math.sin(angle) * (size - 2));
+    ctx.strokeStyle = 'rgba(0,255,65,0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+
+  // Heading needle (always points up after rotation = north)
+  ctx.beginPath();
+  ctx.moveTo(0, -size + 10);
+  ctx.lineTo(-3, 4);
+  ctx.lineTo(3, 4);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,255,65,0.5)';
+  ctx.fill();
+
+  ctx.restore();
+
+  // Heading text below compass
+  ctx.font = '600 8px "JetBrains Mono", monospace';
+  ctx.fillStyle = '#00ff41';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(String(Math.round(heading)).padStart(3, '0') + '°', cx, cy + size + 3);
+}
+
+// ===== FEATURE 9: ROTATION SPEED INDICATOR =====
+function drawRotationIndicator(ctx) {
+  const angVel = Math.abs(S.camera.angular_velocity || 0);
+  const cx = radarCx - radarR + 30;
+  const cy = radarCy + radarR - 16;
+
+  ctx.font = '600 8px "JetBrains Mono", monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  if (angVel > 5) {
+    // Rotating
+    ctx.fillStyle = angVel > 30 ? '#ff6b00' : '#ffcc00';
+    ctx.fillText('↻ ' + Math.round(angVel) + '°/s', cx, cy);
+  } else {
+    // Locked/still
+    ctx.fillStyle = '#00ff41';
+    ctx.fillText('● LOCKED', cx, cy);
+  }
+}
+
+// ===== PRESENCE BLOBS on Radar =====
+function drawPresenceBlobs(ctx) {
+  var blobs = S.sensing.presence.blobs;
+  if (!blobs || blobs.length === 0) return;
+  var now = performance.now();
+
+  blobs.forEach(function(blob) {
+    // Position: azimuth in degrees, radius 0-1
+    var az = degToRad(blob.azimuth - 90);
+    var dist = Math.max(0.1, Math.min(0.85, blob.radius || 0.3));
+    var bx = radarCx + Math.cos(az) * dist * radarR;
+    var by = radarCy + Math.sin(az) * dist * radarR;
+
+    // Color by activity
+    var color;
+    if (blob.activity === 'walking') color = '#ff6b00';
+    else if (blob.activity === 'gesturing') color = '#ffcc00';
+    else color = '#00d4ff'; // 'still' or default
+
+    // Pulse animation - speed based on intensity
+    var intensity = blob.intensity || 0.5;
+    var pulseSpeed = 800 + (1 - intensity) * 1200; // faster for higher intensity
+    var pulse = 0.8 + 0.2 * Math.sin(now / pulseSpeed * Math.PI * 2);
+    var drawR = (12 + intensity * 18) * pulse;
+    var alpha = Math.max(0.2, Math.min(0.85, intensity));
+
+    // Outer glow
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.3;
+    var glow = ctx.createRadialGradient(bx, by, 0, bx, by, drawR + 10);
+    glow.addColorStop(0, color);
+    glow.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(bx, by, drawR + 10, 0, Math.PI * 2);
+    ctx.fillStyle = glow;
+    ctx.fill();
+    ctx.restore();
+
+    // Main blob
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(bx, by, drawR, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+
+    // Inner bright core
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.beginPath();
+    ctx.arc(bx, by, drawR * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.restore();
+
+    // Activity label
+    ctx.save();
+    ctx.font = '600 7px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.9;
+    ctx.fillText((blob.activity || 'still').toUpperCase(), bx, by + drawR + 4);
+    ctx.restore();
+  });
+}
+
+// ===== ANOMALY MARKERS on Radar =====
+function drawAnomalyMarkers(ctx) {
+  var now = performance.now();
+  // Prune markers older than 5 seconds
+  S.anomalyMarkers = S.anomalyMarkers.filter(function(m) { return now - m.time < 5000; });
+
+  S.anomalyMarkers.forEach(function(marker) {
+    var age = now - marker.time;
+    var alpha = Math.max(0, 1 - age / 5000);
+    var scale = 1.2 - 0.2 * (age / 5000);
+    var sectorIdx = marker.sector || 0;
+    var sectorAngle = degToRad(sectorIdx * 30 + 15 - 90);
+    var dist = radarR * 0.7;
+    var mx = radarCx + Math.cos(sectorAngle) * dist;
+    var my = radarCy + Math.sin(sectorAngle) * dist;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = 'bold ' + Math.round(14 * scale) + 'px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffcc00';
+    ctx.shadowColor = '#ffcc00';
+    ctx.shadowBlur = 10;
+    ctx.fillText('⚠', mx, my);
+    ctx.restore();
+  });
+}
+
+// ===== PRESENCE INDICATOR on radar =====
+function drawPresenceIndicator(ctx) {
+  var pres = S.sensing.fast_rssi.presence;
+  if (!pres) return;
+
+  if (pres.detected) {
+    // Translucent human silhouette at center
+    var alpha = Math.max(0.15, Math.min(0.8, S.sensing.fast_rssi.motion.level || 0.3));
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#00d4ff';
+    ctx.font = '28px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#00d4ff';
+    ctx.shadowBlur = 10;
+    ctx.fillText('🧍', radarCx, radarCy - 2);
+    ctx.restore();
+
+    // Person count badge
+    var pc = S.sensing.presence.person_count || 0;
+    if (pc > 1) {
+      ctx.save();
+      ctx.font = '600 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#00d4ff';
+      ctx.fillText('×' + pc, radarCx + 16, radarCy - 14);
+      ctx.restore();
+    }
+  } else {
+    // EMPTY watermark
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = '#00ff41';
+    ctx.font = '600 18px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('EMPTY', radarCx, radarCy);
+    ctx.restore();
+  }
+}
+
+// ===== MOTION HEATMAP from presence_map (12 sectors) =====
+function drawMotionHeatmap(ctx) {
+  var pm = S.sensing.presence.presence_map;
+  if (!pm || pm.length === 0) return;
+
+  for (var i = 0; i < 12; i++) {
+    var score = pm[i] || 0;
+    if (score < 0.02) continue;
+    var startAngle = degToRad(i * 30 - 90);
+    var endAngle = degToRad((i + 1) * 30 - 90);
+
+    // Pulse effect for higher presence scores
+    var pulse = 0.7 + 0.3 * Math.sin(performance.now() / 400 + i);
+    var alpha = score * 0.35 * pulse;
+
+    // Orange/red gradient by intensity
+    var r = Math.round(255);
+    var g = Math.round(Math.max(0, 130 - score * 130));
+    var b = 0;
+
+    ctx.beginPath();
+    ctx.moveTo(radarCx, radarCy);
+    ctx.arc(radarCx, radarCy, radarR * 0.95, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+    ctx.fill();
+  }
+}
+
+// ===== VITAL SIGNS PANEL UPDATE =====
+function updateVitalSignsPanel() {
+  var fr = S.sensing.fast_rssi;
+  var sp = S.sensing.presence;
+  var env = S.sensing.environment;
+
+  // Heart rate
+  var heartEl = document.getElementById('vs-heart-val');
+  var heartConf = document.getElementById('vs-heart-conf');
+  var heartIcon = document.getElementById('vs-heart-icon');
+  var hConf = fr.heart_rate.confidence || 0;
+  if (hConf < 0.15) {
+    heartEl.textContent = '--';
+  } else {
+    heartEl.textContent = Math.round(fr.heart_rate.rate_bpm || 0);
+  }
+  heartConf.style.width = Math.round(hConf * 100) + '%';
+  // Adjust heart pulse animation speed
+  var heartBpm = fr.heart_rate.rate_bpm || 72;
+  if (heartBpm > 0 && hConf >= 0.15) {
+    heartIcon.style.animationDuration = (60 / heartBpm) + 's';
+  }
+
+  // Breathing rate
+  var breatheEl = document.getElementById('vs-breathe-val');
+  var breatheConf = document.getElementById('vs-breathe-conf');
+  var breatheIcon = document.getElementById('vs-breathe-icon');
+  var bConf = fr.breathing.confidence || 0;
+  if (bConf < 0.2) {
+    breatheEl.textContent = '--';
+  } else {
+    breatheEl.textContent = (fr.breathing.rate_bpm || 0).toFixed(1);
+  }
+  breatheConf.style.width = Math.round(bConf * 100) + '%';
+  // Adjust breathing animation speed
+  var breathBpm = fr.breathing.rate_bpm || 16;
+  if (breathBpm > 0 && bConf >= 0.2) {
+    breatheIcon.style.animationDuration = (60 / breathBpm) + 's';
+  }
+
+  // SNR meter
+  var snrFill = document.getElementById('vs-snr-fill');
+  var snrVal = document.getElementById('vs-snr-val');
+  var snr = fr.snr || 0;
+  var snrPct = Math.max(0, Math.min(100, (snr / 50) * 100));
+  snrFill.style.width = snrPct + '%';
+  snrVal.textContent = snr + 'dB';
+
+  // Presence / person count
+  var presEl = document.getElementById('vs-presence');
+  var personCount = sp.person_count || 0;
+  if (fr.presence.detected) {
+    presEl.innerHTML = 'ROOM: <span style="color:var(--cyan);font-weight:600;">' + personCount + '</span> person' + (personCount !== 1 ? 's' : '') + ' detected · <span style="color:var(--orange);">' + Math.round(fr.presence.duration_s || 0) + 's</span>';
+  } else {
+    presEl.innerHTML = 'ROOM: <span style="color:rgba(0,255,65,0.4);">EMPTY</span>';
+  }
+
+  // Motion level
+  var motionFill = document.getElementById('vs-motion-fill');
+  var motionPct = document.getElementById('vs-motion-pct');
+  var motionLvl = Math.round((fr.motion.level || 0) * 100);
+  motionFill.style.width = motionLvl + '%';
+  motionPct.textContent = motionLvl + '%';
+
+  // Activity
+  var actEl = document.getElementById('vs-activity');
+  actEl.textContent = (sp.activity || '--').toUpperCase();
+
+  // Stats bar SNR
+  var snrStat = document.getElementById('s-snr');
+  if (snrStat) snrStat.textContent = snr;
+  // Stats bar presence count
+  var presStat = document.getElementById('s-pres');
+  if (presStat) presStat.textContent = personCount;
+  // Room hash
+  var roomHashEl = document.getElementById('s-room-hash');
+  if (roomHashEl) roomHashEl.textContent = 'RM:' + (env.room_fingerprint_hash || '------');
+}
+
+// ===== RSSI WAVEFORM DISPLAY =====
+function drawRssiWaveform() {
+  var canvas = document.getElementById('rssi-waveform');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var w = canvas.width;
+  var h = canvas.height;
+  var data = S.sensing.fast_rssi.rssi_sparkline;
+  if (!data || data.length === 0) return;
+
+  ctx.clearRect(0, 0, w, h);
+  // Background
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(0,255,65,0.1)';
+  ctx.lineWidth = 0.5;
+  var gridLines = [-90, -70, -50, -30];
+  gridLines.forEach(function(rssi) {
+    var y = h - ((rssi - (-90)) / (-30 - (-90))) * h;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  });
+
+  // RSSI trace
+  ctx.beginPath();
+  ctx.strokeStyle = '#00ff41';
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = '#00ff41';
+  ctx.shadowBlur = 3;
+  var len = data.length;
+  var step = w / Math.max(1, len - 1);
+  for (var i = 0; i < len; i++) {
+    var rssi = data[i];
+    var x = i * step;
+    var y = h - ((rssi - (-90)) / (-30 - (-90))) * h;
+    y = Math.max(1, Math.min(h - 1, y));
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Current RSSI label
+  if (len > 0) {
+    var lastRssi = data[len - 1];
+    ctx.font = '7px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#00ff41';
+    ctx.textAlign = 'right';
+    ctx.fillText(lastRssi + 'dBm', w - 2, 8);
+  }
+}
+
+// ===== ROOM CHANGE INDICATOR =====
+function flashRoomChange() {
+  var el = document.getElementById('room-change-indicator');
+  if (!el) return;
+  el.style.display = 'block';
+  clearTimeout(S.roomChangeTimer);
+  S.roomChangeTimer = setTimeout(function() { el.style.display = 'none'; }, 3000);
+}
+
+// ===== PROCESS NEW ANOMALIES =====
+function processAnomalies(anomalies) {
+  if (!anomalies || anomalies.length === 0) return;
+  var now = performance.now();
+  anomalies.forEach(function(a) {
+    S.anomalyMarkers.push({ sector: a.direction_sector || 0, type: a.type || 'unknown', time: now });
+  });
+}
+
+function drawRadar(dt) {
+  const ctx = radarCtx;
+  const wrap = document.getElementById('radar-wrap');
+  ctx.clearRect(0, 0, wrap.clientWidth, wrap.clientHeight);
+
+  if (!S.layers.radar) return;
+
+  // Background circle
+  ctx.beginPath();
+  ctx.arc(radarCx, radarCy, radarR, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0, 20, 0, 0.4)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // FEATURE 3: WiFi Heatmap (behind everything)
+  drawWifiHeatmap(ctx);
+
+  // Range rings
+  [0.25, 0.5, 0.75].forEach(f => {
+    ctx.beginPath();
+    ctx.arc(radarCx, radarCy, radarR * f, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 255, 65, 0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+
+  // Cross hairs
+  ctx.beginPath();
+  ctx.moveTo(radarCx - radarR, radarCy);
+  ctx.lineTo(radarCx + radarR, radarCy);
+  ctx.moveTo(radarCx, radarCy - radarR);
+  ctx.lineTo(radarCx, radarCy + radarR);
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.1)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // FEATURE 1: Vision Cone
+  drawVisionCone(ctx);
+
+  // Sweep line
+  radarAngle += dt * 0.8;
+  if (radarAngle > Math.PI * 2) radarAngle -= Math.PI * 2;
+
+  for (let i = 0; i < 30; i++) {
+    const a = radarAngle - (i * 0.02);
+    const alpha = (30 - i) / 30 * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(radarCx, radarCy);
+    ctx.lineTo(radarCx + Math.cos(a) * radarR, radarCy + Math.sin(a) * radarR);
+    ctx.strokeStyle = `rgba(0, 255, 65, ${alpha})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  // Main sweep line
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.lineTo(radarCx + Math.cos(radarAngle) * radarR, radarCy + Math.sin(radarAngle) * radarR);
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.8)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(radarCx, radarCy, 2, 0, Math.PI * 2);
+  ctx.fillStyle = '#00ff41';
+  ctx.fill();
+
+  // Blips (with directional cone boost)
+  S.radarBlips.forEach(b => {
+    // Convert azimuth to canvas coords (0=up in radar terms, -90 offset for canvas)
+    const drawAngle = b.azimuth - Math.PI / 2;
+    const bx = radarCx + Math.cos(drawAngle) * b.distance * radarR;
+    const by = radarCy + Math.sin(drawAngle) * b.distance * radarR;
+    b._screenX = bx;
+    b._screenY = by;
+
+    // Check if in vision cone
+    const inCone = isBlipInCone(b.azimuthDeg);
+
+    // Fade based on angular distance from sweep
+    let sweepDiff = radarAngle - drawAngle;
+    while (sweepDiff < 0) sweepDiff += Math.PI * 2;
+    while (sweepDiff > Math.PI * 2) sweepDiff -= Math.PI * 2;
+    const fadeAlpha = sweepDiff < Math.PI ? Math.max(0.15, 1 - sweepDiff / Math.PI) : 0.15;
+    let alpha = b.glow ? Math.max(fadeAlpha, 0.6) : fadeAlpha;
+
+    // Cone boost: brighter + bigger if in cone, dimmer if outside
+    let drawRadius = b.radius;
+    if (inCone) {
+      alpha = Math.min(1, alpha * 1.5 + 0.2);
+      drawRadius = b.radius * 1.4;
+    } else {
+      alpha *= 0.6;
+    }
+
+    // Glow
+    if (b.glow || inCone) {
+      const gr = ctx.createRadialGradient(bx, by, 0, bx, by, drawRadius + 5);
+      gr.addColorStop(0, b.color + Math.round(alpha * 80).toString(16).padStart(2, '0'));
+      gr.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(bx, by, drawRadius + 5, 0, Math.PI * 2);
+      ctx.fillStyle = gr;
+      ctx.fill();
+    }
+
+    // Main blip
+    ctx.beginPath();
+    ctx.arc(bx, by, drawRadius, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // CONE BOOST: white highlight ring for in-cone blips
+    if (inCone) {
+      ctx.beginPath();
+      ctx.arc(bx, by, drawRadius + 1.5, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  });
+
+  // FEATURE 4: BLE Density Ring
+  drawBleDensityRing(ctx, dt);
+
+  // Motion Heatmap Enhancement (wifi_sensing per_ap)
+  drawMotionHeatmap(ctx);
+
+  // Presence Indicator (sensing.fast_rssi.presence)
+  drawPresenceIndicator(ctx);
+
+  // Presence Blobs (sensing.presence.blobs)
+  drawPresenceBlobs(ctx);
+
+  // Anomaly Markers
+  drawAnomalyMarkers(ctx);
+
+  // FEATURE 2: Compass Rose
+  drawCompass(ctx);
+
+  // FEATURE 9: Rotation indicator
+  drawRotationIndicator(ctx);
+}
+
+// ===== FEATURE 6: SIGNAL STRENGTH METER on hover =====
+radarCanvas.addEventListener('mousemove', e => {
+  const rect = radarCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  let found = null;
+  for (const b of S.radarBlips) {
+    if (!b._screenX) continue;
+    const dx = mx - b._screenX, dy = my - b._screenY;
+    if (Math.sqrt(dx * dx + dy * dy) < b.radius + 6) { found = b; break; }
+  }
+  if (found) {
+    radarTooltip.style.display = 'block';
+    radarTooltip.style.left = (found._screenX + 12) + 'px';
+    radarTooltip.style.top = (found._screenY - 8) + 'px';
+    radarTooltip.textContent = `${found.name || '???'} ${found.rssi}dBm [${found.type}]`;
+
+    // Show signal meter
+    signalMeter.style.display = 'block';
+    signalMeter.style.left = (found._screenX + 12) + 'px';
+    signalMeter.style.top = (found._screenY + 14) + 'px';
+    signalMeter.querySelector('.sm-name').textContent = found.name || '???';
+    const pct = rssiPct(found.rssi);
+    const mBar = signalMeter.querySelector('.sm-bar');
+    mBar.style.width = pct + '%';
+    const barColor = found.rssi > -50 ? '#00ff41' : found.rssi > -70 ? '#ffcc00' : '#ff0040';
+    mBar.style.background = barColor;
+    mBar.style.boxShadow = '0 0 6px ' + barColor;
+    document.getElementById('sm-rssi').textContent = found.rssi + ' dBm';
+    document.getElementById('sm-boost').textContent = Math.round((found.directionBoost || 0) * 100) + '%';
+    document.getElementById('sm-chan').textContent = found.channel || '—';
+    document.getElementById('sm-type').textContent = found.type.toUpperCase();
+  } else {
+    radarTooltip.style.display = 'none';
+    signalMeter.style.display = 'none';
+  }
+});
+
+radarCanvas.addEventListener('mouseleave', () => {
+  radarTooltip.style.display = 'none';
+  signalMeter.style.display = 'none';
+});
+
+// ===== TOPOLOGY (Force-Directed Graph) =====
+const topoCanvas = document.getElementById('topo-canvas');
+const topoCtx = topoCanvas.getContext('2d');
+const nodeDetail = document.getElementById('node-detail');
+
+function resizeTopo() {
+  const wrap = document.getElementById('topo-wrap');
+  topoCanvas.width = wrap.clientWidth * devicePixelRatio;
+  topoCanvas.height = wrap.clientHeight * devicePixelRatio;
+  topoCanvas.style.width = wrap.clientWidth + 'px';
+  topoCanvas.style.height = wrap.clientHeight + 'px';
+  topoCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+
+function rebuildGraph() {
+  const existingPos = {};
+  S.graphNodes.forEach(n => { existingPos[n.id] = { x: n.x, y: n.y, vx: n.vx, vy: n.vy }; });
+
+  const wrap = document.getElementById('topo-wrap');
+  const cx = wrap.clientWidth / 2;
+  const cy = wrap.clientHeight / 2;
+
+  const nodes = [];
+  const nodeMap = {};
+
+  // Add YOU node
+  const youNode = { id: '__YOU__', name: 'YOU', type: 'you', x: cx, y: cy, vx: 0, vy: 0, fixed: true };
+  if (existingPos['__YOU__']) { youNode.x = existingPos['__YOU__'].x; youNode.y = existingPos['__YOU__'].y; }
+  nodes.push(youNode);
+  nodeMap['__YOU__'] = youNode;
+
+  S.meshNodes.forEach(mn => {
+    const id = mn.id || mn.name;
+    const prev = existingPos[id];
+    const node = {
+      id, name: mn.name || mn.id, type: mn.type || 'mesh',
+      hop_count: mn.hop_count, rssi: mn.rssi_estimate,
+      x: prev ? prev.x : cx + (Math.random() - 0.5) * 200,
+      y: prev ? prev.y : cy + (Math.random() - 0.5) * 200,
+      vx: prev ? prev.vx : 0, vy: prev ? prev.vy : 0, fixed: false
+    };
+    nodes.push(node);
+    nodeMap[id] = node;
+  });
+
+  // FEATURE 10: Shared Users as diamond nodes
+  S.sharedUsers.forEach(su => {
+    const id = '__shared_' + su.name;
+    const prev = existingPos[id];
+    const node = {
+      id, name: su.name, type: 'shared_user',
+      heading: su.heading, lat: su.lat, lon: su.lon,
+      x: prev ? prev.x : cx + (Math.random() - 0.5) * 250,
+      y: prev ? prev.y : cy + (Math.random() - 0.5) * 250,
+      vx: prev ? prev.vx : 0, vy: prev ? prev.vy : 0, fixed: false
+    };
+    nodes.push(node);
+    nodeMap[id] = node;
+  });
+
+  const links = [];
+  S.meshLinks.forEach(ml => {
+    const fromNode = nodeMap[ml.from] || nodeMap['__YOU__'];
+    const toNode = nodeMap[ml.to];
+    if (fromNode && toNode) {
+      links.push({ from: fromNode, to: toNode, quality: ml.quality || 0.5, type: ml.type, medium: ml.medium,
+        qualityHistory: ml.quality_history || [] });
+    }
+  });
+
+  // Virtual links for unconnected nodes
+  nodes.forEach(n => {
+    if (n.id === '__YOU__') return;
+    const hasLink = links.some(l => (l.from === n || l.to === n));
+    if (!hasLink) {
+      links.push({ from: youNode, to: n, quality: 0.5, type: 'virtual', medium: 'unknown', qualityHistory: [] });
+    }
+  });
+
+  S.graphNodes = nodes;
+  S.graphLinks = links;
+}
+
+function stepPhysics(dt) {
+  const nodes = S.graphNodes;
+  const links = S.graphLinks;
+  if (nodes.length < 2) return;
+
+  const wrap = document.getElementById('topo-wrap');
+  const cx = wrap.clientWidth / 2;
+  const cy = wrap.clientHeight / 2;
+  const k = 120;
+  const repulsion = 5000;
+  const damping = 0.85;
+  const springK = 0.03;
+
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      let force = repulsion / (dist * dist);
+      let fx = (dx / dist) * force, fy = (dy / dist) * force;
+      if (!a.fixed) { a.vx -= fx; a.vy -= fy; }
+      if (!b.fixed) { b.vx += fx; b.vy += fy; }
+    }
+  }
+
+  links.forEach(l => {
+    let dx = l.to.x - l.from.x, dy = l.to.y - l.from.y;
+    let dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    let force = (dist - k) * springK;
+    let fx = (dx / dist) * force, fy = (dy / dist) * force;
+    if (!l.from.fixed) { l.from.vx += fx; l.from.vy += fy; }
+    if (!l.to.fixed) { l.to.vx -= fx; l.to.vy -= fy; }
+  });
+
+  nodes.forEach(n => {
+    if (n.fixed) return;
+    n.vx += (cx - n.x) * 0.001;
+    n.vy += (cy - n.y) * 0.001;
+  });
+
+  nodes.forEach(n => {
+    if (n.fixed) return;
+    n.vx *= damping;
+    n.vy *= damping;
+    n.x += n.vx * dt;
+    n.y += n.vy * dt;
+    n.x = Math.max(20, Math.min(wrap.clientWidth - 20, n.x));
+    n.y = Math.max(20, Math.min(wrap.clientHeight - 20, n.y));
+  });
+}
+
+// ===== FEATURE 5: LINK QUALITY SPARKLINES =====
+function drawSparkline(ctx, cx, cy, history) {
+  if (!history || history.length < 2) return;
+  const w = 30, h = 12;
+  const x0 = cx - w / 2, y0 = cy - h / 2;
+
+  // Background
+  ctx.fillStyle = 'rgba(0,12,0,0.6)';
+  ctx.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
+
+  const minVal = 0, maxVal = 1;
+  const stepX = w / (history.length - 1);
+
+  ctx.beginPath();
+  history.forEach((entry, i) => {
+    const val = Array.isArray(entry) ? entry[1] : entry;
+    const px = x0 + i * stepX;
+    const py = y0 + h - ((val - minVal) / (maxVal - minVal)) * h;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+
+  // Color by last value
+  const lastVal = Array.isArray(history[history.length - 1]) ? history[history.length - 1][1] : history[history.length - 1];
+  ctx.strokeStyle = qualityColor(lastVal);
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawTopology() {
+  const wrap = document.getElementById('topo-wrap');
+  const ctx = topoCtx;
+  ctx.clearRect(0, 0, wrap.clientWidth, wrap.clientHeight);
+
+  if (!S.layers.topology) return;
+
+  ctx.save();
+  const parallaxX = (S.camera.yaw_estimate || 0) * -0.5;
+  const parallaxY = (S.camera.pitch_estimate || 0) * -0.3;
+  ctx.translate(S.topoPan.x + parallaxX, S.topoPan.y + parallaxY);
+  ctx.scale(S.topoZoom, S.topoZoom);
+
+  // Draw links
+  S.graphLinks.forEach(l => {
+    ctx.beginPath();
+    ctx.moveTo(l.from.x, l.from.y);
+    ctx.lineTo(l.to.x, l.to.y);
+    ctx.strokeStyle = qualityColor(l.quality);
+    ctx.lineWidth = 0.5 + l.quality * 2.5;
+    ctx.globalAlpha = 0.5 + l.quality * 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // FEATURE 5: Sparkline at midpoint
+    if (l.qualityHistory && l.qualityHistory.length >= 2) {
+      const mx = (l.from.x + l.to.x) / 2;
+      const my = (l.from.y + l.to.y) / 2;
+      drawSparkline(ctx, mx, my, l.qualityHistory);
+    }
+  });
+
+  // Draw particles (message animations)
+  S.particles = S.particles.filter(p => {
+    p.t += 0.015;
+    if (p.t > 1) return false;
+    const x = p.from.x + (p.to.x - p.from.x) * p.t;
+    const y = p.from.y + (p.to.y - p.from.y) * p.t;
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = p.color || '#00d4ff';
+    ctx.fill();
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 8);
+    glow.addColorStop(0, 'rgba(0,212,255,0.5)');
+    glow.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = glow;
+    ctx.fill();
+    return true;
+  });
+
+  // Draw nodes
+  S.graphNodes.forEach(n => {
+    const isSelected = S.selectedNode && S.selectedNode.id === n.id;
+    let color, radius;
+
+    if (n.type === 'you') { color = '#00ff41'; radius = 10; }
+    else if (n.type === 'reticulum') { color = '#aa44ff'; radius = 7; }
+    else if (n.type === 'wifi-ap') { color = '#00ff41'; radius = 6; }
+    else if (n.type === 'shared_user') { color = '#00d4ff'; radius = 8; }
+    else { color = '#ff6b00'; radius = 7; }
+
+    if (isSelected) radius += 3;
+
+    // FEATURE 10: Shared users as diamonds
+    if (n.type === 'shared_user') {
+      // Pulsing glow
+      const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 500);
+      const glowR = radius + 12;
+      const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+      glow.addColorStop(0, `rgba(0,212,255,${0.3 * pulse})`);
+      glow.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+
+      // Diamond shape
+      ctx.beginPath();
+      ctx.moveTo(n.x, n.y - radius);
+      ctx.lineTo(n.x + radius * 0.7, n.y);
+      ctx.lineTo(n.x, n.y + radius);
+      ctx.lineTo(n.x - radius * 0.7, n.y);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(0,212,255,${0.7 + 0.3 * pulse})`;
+      ctx.fill();
+      ctx.strokeStyle = '#00d4ff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Heading arrow
+      if (n.heading !== undefined) {
+        const ha = degToRad(n.heading - 90);
+        const arrowLen = radius + 8;
+        ctx.beginPath();
+        ctx.moveTo(n.x, n.y);
+        ctx.lineTo(n.x + Math.cos(ha) * arrowLen, n.y + Math.sin(ha) * arrowLen);
+        ctx.strokeStyle = 'rgba(0,212,255,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // Arrowhead
+        const ax = n.x + Math.cos(ha) * arrowLen;
+        const ay = n.y + Math.sin(ha) * arrowLen;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(ax + Math.cos(ha + 2.6) * 5, ay + Math.sin(ha + 2.6) * 5);
+        ctx.lineTo(ax + Math.cos(ha - 2.6) * 5, ay + Math.sin(ha - 2.6) * 5);
+        ctx.closePath();
+        ctx.fillStyle = '#00d4ff';
+        ctx.fill();
+      }
+
+      // Label
+      ctx.fillStyle = '#00d4ff';
+      ctx.font = '600 9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(n.name, n.x, n.y + radius + 14);
+      return; // skip normal node drawing
+    }
+
+    // Glow for YOU / selected
+    if (n.type === 'you' || isSelected) {
+      const glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, radius + 10);
+      glow.addColorStop(0, color + '60');
+      glow.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, radius + 10, 0, Math.PI * 2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+    }
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color + (isSelected ? 'ff' : 'cc');
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = color;
+    ctx.font = (n.type === 'you' ? '600 ' : '') + '9px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(n.name, n.x, n.y + radius + 12);
+
+    if (n.type === 'you') {
+      ctx.fillStyle = 'rgba(0,255,65,0.4)';
+      ctx.font = '7px "JetBrains Mono", monospace';
+      ctx.fillText('◉', n.x, n.y + 3);
+    }
+  });
+
+  ctx.restore();
+}
+
+// Topo interaction
+topoCanvas.addEventListener('mousedown', e => {
+  const rect = topoCanvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left - S.topoPan.x) / S.topoZoom;
+  const my = (e.clientY - rect.top - S.topoPan.y) / S.topoZoom;
+
+  let clicked = null;
+  for (const n of S.graphNodes) {
+    const dx = mx - n.x, dy = my - n.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 15) { clicked = n; break; }
+  }
+
+  if (clicked) {
+    S.selectedNode = clicked;
+    const det = nodeDetail;
+    det.style.display = 'block';
+    det.innerHTML = `
+      <div>◈ <b>${clicked.name}</b></div>
+      <div>Type: ${clicked.type}</div>
+      ${clicked.rssi !== undefined ? `<div>RSSI: ${clicked.rssi} dBm</div>` : ''}
+      ${clicked.hop_count !== undefined ? `<div>Hops: ${clicked.hop_count}</div>` : ''}
+      ${clicked.lat !== undefined ? `<div>Lat: ${clicked.lat.toFixed(4)}</div>` : ''}
+      ${clicked.lon !== undefined ? `<div>Lon: ${clicked.lon.toFixed(4)}</div>` : ''}
+      <div>ID: ${clicked.id}</div>
+    `;
+  } else {
+    S.selectedNode = null;
+    nodeDetail.style.display = 'none';
+    S.topoDragging = true;
+    S.topoDragStart = { x: e.clientX - S.topoPan.x, y: e.clientY - S.topoPan.y };
+  }
+});
+
+topoCanvas.addEventListener('mousemove', e => {
+  if (S.topoDragging) {
+    S.topoPan.x = e.clientX - S.topoDragStart.x;
+    S.topoPan.y = e.clientY - S.topoDragStart.y;
+  }
+});
+
+window.addEventListener('mouseup', () => { S.topoDragging = false; });
+
+topoCanvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  S.topoZoom = Math.max(0.3, Math.min(3, S.topoZoom * delta));
+}, { passive: false });
+
+// ===== MESSAGE FEED (FEATURE 8: Enhanced with latency + routing particles) =====
+const feed = document.getElementById('feed');
+
+function addMessage(msg) {
+  S.allMessages.push(msg);
+  if (S.allMessages.length > 100) S.allMessages.shift();
+
+  // FEATURE 8: Simulated delivery latency
+  const hops = msg.hops || 1;
+  const latency = hops * 200;
+
+  const div = document.createElement('div');
+  div.className = 'msg ' + (msg.delivered !== false ? 'delivered' : 'undelivered');
+  div.innerHTML = `
+    <span class="msg-from">${msg.from_name || '???'}</span>
+    → ${msg.to_name || 'all'}
+    <div class="msg-content">${escapeHtml(msg.content || '')}</div>
+    <div class="msg-meta">
+      ${msg.hops !== undefined ? msg.hops + ' hops · ' : ''}
+      <span class="msg-status">${msg.delivered !== false ? '✓' : '✗'}</span>
+      · ${relativeTime(msg.timestamp)}
+      <span class="msg-latency"> · ~${latency}ms</span>
+    </div>
+  `;
+  feed.appendChild(div);
+  feed.scrollTop = feed.scrollHeight;
+
+  // FEATURE 8: Route-aware particle spawning
+  spawnMessageParticles(msg);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function spawnMessageParticles(msg) {
+  // If msg has a route array, follow the full route
+  const route = msg.route;
+  if (route && route.length >= 2) {
+    for (let i = 0; i < route.length - 1; i++) {
+      const fromNode = S.graphNodes.find(n => n.name === route[i] || n.id === route[i]);
+      const toNode = S.graphNodes.find(n => n.name === route[i + 1] || n.id === route[i + 1]);
+      if (fromNode && toNode) {
+        // Delay each hop's particle
+        setTimeout(() => {
+          S.particles.push({ from: fromNode, to: toNode, t: 0, color: '#00d4ff' });
+        }, i * 300);
+      }
+    }
+    return;
+  }
+
+  // Fallback: simple from -> to particle
+  const fromNode = S.graphNodes.find(n => n.name === msg.from_name || n.id === msg.from_name);
+  const toNode = S.graphNodes.find(n => n.name === msg.to_name || n.id === msg.to_name);
+  if (fromNode && toNode) {
+    S.particles.push({ from: fromNode, to: toNode, t: 0, color: '#00d4ff' });
+  } else if (fromNode) {
+    const you = S.graphNodes.find(n => n.id === '__YOU__');
+    if (you) S.particles.push({ from: fromNode, to: you, t: 0, color: '#00d4ff' });
+  }
+}
+
+// ===== CHAT INPUT =====
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
+
+function sendChat() {
+  const content = chatInput.value.trim();
+  if (!content) return;
+  chatInput.value = '';
+
+  var apiBase = window.MESH_BACKEND_URL || localStorage.getItem('mesh_backend_url') || '';
+  if (apiBase && !apiBase.startsWith('http')) apiBase = 'http://' + apiBase;
+  fetch(apiBase + '/api/send-message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content })
+  }).then(r => r.json()).then(res => {
+    if (res.status === 'queued' || res.status === 'sent') {
+      addMessage({ from_name: 'YOU', to_name: 'all', content, timestamp: Date.now()/1000, hops: 1, delivered: true });
+    }
+  }).catch(() => {
+    addMessage({ from_name: 'YOU', to_name: 'all', content, timestamp: Date.now(), hops: 0, delivered: false });
+  });
+}
+
+chatSend.addEventListener('click', sendChat);
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+// ===== WEBSOCKET =====
+let ws = null;
+let prevMsgCount = 0;
+
+// Called from Android activity after injecting MESH_BACKEND_URL
+function reconnectWS() {
+  if (ws) { try { ws.close(); } catch(e) {} ws = null; }
+  S.wsConnected = false;
+  document.getElementById('ws-status').classList.remove('connected');
+  connectWS();
+}
+
+function connectWS() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+
+  // Backend URL priority: window.MESH_BACKEND_URL > localStorage > location.host
+  var backendHost = window.MESH_BACKEND_URL
+    || localStorage.getItem('mesh_backend_url')
+    || null;
+
+  var wsUrl;
+  if (backendHost) {
+    // Glasses mode: connect to MacBook backend
+    var proto = backendHost.startsWith('wss://') || backendHost.startsWith('ws://') ? '' : 'ws://';
+    var host = backendHost.replace(/^wss?:\/\//, '').replace(/\/+$/, '');
+    wsUrl = proto + 'ws://' + host + '/ws/mesh';
+  } else {
+    // Browser mode: connect relative to current host
+    var wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    wsUrl = wsProto + location.host + '/ws/mesh';
+  }
+
+  console.log('[HUD] Connecting WebSocket:', wsUrl);
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    S.wsConnected = true;
+    document.getElementById('ws-status').classList.add('connected');
+  };
+
+  ws.onclose = () => {
+    S.wsConnected = false;
+    document.getElementById('ws-status').classList.remove('connected');
+    clearTimeout(S.wsReconnectTimer);
+    S.wsReconnectTimer = setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => { ws.close(); };
+
+  ws.onmessage = (evt) => {
+    if (S.paused) return;
+    try {
+      const data = JSON.parse(evt.data);
+      S.wifi = data.wifi || [];
+      S.ble = data.ble || [];
+      S.meshNodes = data.mesh_nodes || [];
+      S.meshLinks = data.mesh_links || [];
+      if (data.camera) S.camera = { ...S.camera, ...data.camera };
+      if (data.wifi_heatmap) S.wifiHeatmap = data.wifi_heatmap;
+      if (data.ble_density) S.bleDensity = data.ble_density;
+      if (data.shared_users) S.sharedUsers = data.shared_users;
+
+      // New: Sensing data (fast_rssi, environment, presence)
+      if (data.sensing) {
+        if (data.sensing.fast_rssi) S.sensing.fast_rssi = Object.assign(S.sensing.fast_rssi, data.sensing.fast_rssi);
+        if (data.sensing.environment) {
+          var prevRoomHash = S.sensing.environment.room_fingerprint_hash;
+          S.sensing.environment = Object.assign(S.sensing.environment, data.sensing.environment);
+          // Check for room change
+          if (data.sensing.environment.room_changed) flashRoomChange();
+          // Process anomalies
+          if (data.sensing.environment.anomalies && data.sensing.environment.anomalies.length > 0) {
+            processAnomalies(data.sensing.environment.anomalies);
+          }
+        }
+        if (data.sensing.presence) S.sensing.presence = Object.assign(S.sensing.presence, data.sensing.presence);
+      }
+
+      // New messages
+      const msgs = data.mesh_messages || [];
+      if (msgs.length > prevMsgCount) {
+        for (let i = prevMsgCount; i < msgs.length; i++) {
+          addMessage(msgs[i]);
+        }
+      }
+      prevMsgCount = msgs.length;
+
+      // Rebuild derived state
+      updateSpectrum();
+      buildRadarBlips();
+      rebuildGraph();
+      updateSignalBars();
+      updateVitalSignsPanel();
+      drawRssiWaveform();
+
+      // Update stats
+      document.getElementById('s-wifi').textContent = S.wifi.length;
+      document.getElementById('s-ble').textContent = S.ble.length;
+      document.getElementById('s-mesh').textContent = S.meshNodes.length;
+      document.getElementById('s-links').textContent = S.meshLinks.length;
+      document.getElementById('s-hdg').textContent = String(Math.round(S.camera.heading || 0)).padStart(3, '0');
+    } catch (e) { console.error('WS parse error:', e); }
+  };
+}
+
+// ===== KEYBOARD CONTROLS =====
+window.addEventListener('keydown', e => {
+  if (e.target === chatInput) return;
+
+  if (e.key === ' ') {
+    e.preventDefault();
+    S.paused = !S.paused;
+    document.getElementById('pause-indicator').style.display = S.paused ? 'inline' : 'none';
+  }
+  if (e.key === '1') {
+    S.layers.radar = !S.layers.radar;
+    document.querySelector('[data-layer="radar"]').classList.toggle('active', S.layers.radar);
+  }
+  if (e.key === '2') {
+    S.layers.spectrum = !S.layers.spectrum;
+    document.querySelector('[data-layer="spectrum"]').classList.toggle('active', S.layers.spectrum);
+    document.getElementById('spectrum').style.opacity = S.layers.spectrum ? 1 : 0.15;
+  }
+  if (e.key === '3') {
+    S.layers.topology = !S.layers.topology;
+    document.querySelector('[data-layer="topology"]').classList.toggle('active', S.layers.topology);
+  }
+  if (e.key === '4') {
+    const allOn = S.layers.radar && S.layers.spectrum && S.layers.topology;
+    S.layers.radar = S.layers.spectrum = S.layers.topology = !allOn;
+    document.querySelectorAll('.layer-ind').forEach(el => el.classList.toggle('active', !allOn));
+    document.getElementById('spectrum').style.opacity = !allOn ? 1 : 0.15;
+  }
+});
+
+// Layer indicator clicks
+document.querySelectorAll('.layer-ind').forEach(el => {
+  el.addEventListener('click', () => {
+    const key = el.dataset.layer;
+    if (key === 'all') {
+      const allOn = S.layers.radar && S.layers.spectrum && S.layers.topology;
+      S.layers.radar = S.layers.spectrum = S.layers.topology = !allOn;
+      document.querySelectorAll('.layer-ind').forEach(e2 => e2.classList.toggle('active', !allOn));
+      document.getElementById('spectrum').style.opacity = !allOn ? 1 : 0.15;
+    } else {
+      S.layers[key] = !S.layers[key];
+      el.classList.toggle('active', S.layers[key]);
+      if (key === 'spectrum') document.getElementById('spectrum').style.opacity = S.layers[key] ? 1 : 0.15;
+    }
+  });
+});
+
+// ===== RESIZE =====
+function onResize() {
+  resizeRadar();
+  resizeTopo();
+}
+window.addEventListener('resize', onResize);
+
+// ===== MAIN LOOP =====
+let lastTime = performance.now();
+
+function mainLoop(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+
+  // FPS
+  S.frameCount++;
+  if (now - S.lastFpsTime > 1000) {
+    S.fps = S.frameCount;
+    S.frameCount = 0;
+    S.lastFpsTime = now;
+    document.getElementById('s-fps').textContent = S.fps;
+  }
+
+  if (!S.paused) {
+    stepPhysics(dt);
+  }
+
+  drawRadar(dt);
+  drawTopology();
+
+  requestAnimationFrame(mainLoop);
+}
+
+// ===== DEMO DATA (for offline testing) =====
+function injectDemoData() {
+  let demoHeading = 0;
+
+  S.wifi = [
+    { ssid: 'HomeNet-5G', bssid: 'AA:BB:CC:DD:EE:01', rssi: -45, channel: 36, frequency: 5180, security: 'WPA3', azimuth_deg: 30, direction_boost: 0.9 },
+    { ssid: 'Neighbor_2.4', bssid: 'AA:BB:CC:DD:EE:02', rssi: -72, channel: 6, frequency: 2437, security: 'WPA2', azimuth_deg: 150, direction_boost: 0.1 },
+    { ssid: 'CoffeeShop', bssid: 'AA:BB:CC:DD:EE:03', rssi: -65, channel: 1, frequency: 2412, security: 'Open', azimuth_deg: 200, direction_boost: 0.0 },
+    { ssid: 'Office-AP', bssid: 'AA:BB:CC:DD:EE:04', rssi: -58, channel: 44, frequency: 5220, security: 'WPA2-E', azimuth_deg: 45, direction_boost: 0.85 },
+    { ssid: 'IoT-Net', bssid: 'AA:BB:CC:DD:EE:05', rssi: -82, channel: 11, frequency: 2462, security: 'WPA2', azimuth_deg: 310, direction_boost: 0.0 },
+    { ssid: 'Guest', bssid: 'AA:BB:CC:DD:EE:06', rssi: -50, channel: 149, frequency: 5745, security: 'WPA2', azimuth_deg: 15, direction_boost: 0.95 },
+    { ssid: 'BackhaulAP', bssid: 'AA:BB:CC:DD:EE:07', rssi: -38, channel: 6, frequency: 2437, security: 'WPA3', azimuth_deg: 350, direction_boost: 0.7 },
+  ];
+  S.ble = [
+    { name: 'iPhone-X', address: '11:22:33:44:55:01', rssi: -55, services: ['FFF0'], azimuth_deg: 60, direction_boost: 0.6 },
+    { name: 'AirPods Pro', address: '11:22:33:44:55:02', rssi: -62, services: ['180F'], azimuth_deg: 25, direction_boost: 0.88 },
+    { name: 'Tile Tracker', address: '11:22:33:44:55:03', rssi: -78, services: ['FEED'], azimuth_deg: 180, direction_boost: 0.05 },
+    { name: 'Mi Band 7', address: '11:22:33:44:55:04', rssi: -70, services: ['180D'], azimuth_deg: 270, direction_boost: 0.0 },
+    { name: 'BLE-Unknown', address: '11:22:33:44:55:05', rssi: -88, services: [], azimuth_deg: 120, direction_boost: 0.15 },
+  ];
+  S.meshNodes = [
+    { id: 'node-alpha', name: 'ALPHA', type: 'mesh', hop_count: 1, rssi_estimate: -42, last_seen: Date.now() },
+    { id: 'node-bravo', name: 'BRAVO', type: 'reticulum', hop_count: 2, rssi_estimate: -68, last_seen: Date.now() },
+    { id: 'node-charlie', name: 'CHARLIE', type: 'mesh', hop_count: 1, rssi_estimate: -55, last_seen: Date.now() },
+    { id: 'node-delta', name: 'DELTA', type: 'mesh', hop_count: 3, rssi_estimate: -75, last_seen: Date.now() },
+    { id: 'node-echo', name: 'ECHO', type: 'reticulum', hop_count: 2, rssi_estimate: -60, last_seen: Date.now() },
+  ];
+
+  // Generate quality history for links
+  function genHistory(base, count) {
+    const h = [];
+    const now = Date.now();
+    for (let i = 0; i < count; i++) {
+      const t = now - (count - i) * 3000;
+      const v = Math.max(0.05, Math.min(1, base + (Math.random() - 0.5) * 0.2));
+      h.push([t, v]);
+    }
+    return h;
+  }
+
+  S.meshLinks = [
+    { from: '__YOU__', to: 'node-alpha', quality: 0.92, type: 'direct', medium: 'lora', quality_history: genHistory(0.9, 30) },
+    { from: '__YOU__', to: 'node-charlie', quality: 0.78, type: 'direct', medium: 'wifi', quality_history: genHistory(0.75, 30) },
+    { from: 'node-alpha', to: 'node-bravo', quality: 0.65, type: 'relay', medium: 'lora', quality_history: genHistory(0.6, 30) },
+    { from: 'node-charlie', to: 'node-delta', quality: 0.45, type: 'relay', medium: 'lora', quality_history: genHistory(0.45, 30) },
+    { from: 'node-bravo', to: 'node-echo', quality: 0.82, type: 'direct', medium: 'reticulum', quality_history: genHistory(0.8, 30) },
+    { from: 'node-alpha', to: 'node-echo', quality: 0.55, type: 'relay', medium: 'wifi', quality_history: genHistory(0.55, 30) },
+  ];
+
+  // WiFi heatmap demo
+  S.wifiHeatmap = { '0': -45, '1': -55, '2': -72, '3': -80, '5': -65, '6': -58, '7': -82, '10': -50, '11': -38 };
+
+  // BLE density demo
+  S.bleDensity = { total: 5, per_sector: [1, 2, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0] };
+
+  // Shared users demo
+  S.sharedUsers = [
+    { name: 'ALICE', lat: 37.7749, lon: -122.4194, heading: 135, last_seen: Date.now() - 5000 },
+    { name: 'BOB', lat: 37.7751, lon: -122.4190, heading: 270, last_seen: Date.now() - 2000 },
+  ];
+
+  // Camera heading demo
+  S.camera = { active: true, yaw_estimate: 0, pitch_estimate: 0, heading: 20, angular_velocity: 0, movement_magnitude: 0.3 };
+
+  // Sensing demo (new payload shape)
+  S.sensing = {
+    fast_rssi: {
+      current_rssi: -65, noise_floor: -92, snr: 27,
+      breathing: { rate_bpm: 16.2, confidence: 0.4, amplitude: 0.8 },
+      heart_rate: { rate_bpm: 72, confidence: 0.35, amplitude: 0.2 },
+      motion: { level: 0.3, variance_1s: 2.1, is_moving: true },
+      presence: { detected: true, confidence: 0.7, duration_s: 45 },
+      rssi_sparkline: [-65, -66, -65, -64, -66, -67, -65, -63, -64, -65, -66, -67, -66, -65, -64, -63, -64, -65, -66, -65, -64, -63, -64, -65, -66, -67, -66, -65, -64, -63]
+    },
+    environment: {
+      ap_count: 23, channel_map: {'1': 3, '6': 5, '11': 2, '36': 4},
+      density_sectors: [3, 2, 5, 1, 0, 2, 4, 1, 3, 2, 1, 0],
+      signal_diversity: 23, room_fingerprint_hash: 'a3f2c1', room_changed: false,
+      strongest_aps: [
+        { ssid: 'HomeNet-5G', bssid: 'AA:BB:CC:DD:EE:01', rssi: -37, channel: 3, snr: 55, stability: 0.9, trend: -0.1 }
+      ],
+      anomalies: []
+    },
+    presence: {
+      person_count: 1, total_confidence: 0.65, activity: 'still',
+      presence_map: [0.1, 0.0, 0.7, 0.3, 0.0, 0.0, 0.2, 0.0, 0.0, 0.1, 0.0, 0.0],
+      blobs: [{ azimuth: 85, radius: 0.3, intensity: 0.7, activity: 'still' }],
+      duration_s: 45
+    }
+  };
+
+  updateSpectrum();
+  buildRadarBlips();
+  rebuildGraph();
+  updateSignalBars();
+  updateVitalSignsPanel();
+  drawRssiWaveform();
+
+  document.getElementById('s-wifi').textContent = S.wifi.length;
+  document.getElementById('s-ble').textContent = S.ble.length;
+  document.getElementById('s-mesh').textContent = S.meshNodes.length;
+  document.getElementById('s-links').textContent = S.meshLinks.length;
+  document.getElementById('s-hdg').textContent = String(Math.round(S.camera.heading)).padStart(3, '0');
+
+  // Demo messages
+  setTimeout(() => {
+    addMessage({ from_name: 'ALPHA', to_name: 'YOU', content: 'Mesh link established, signal strong', timestamp: Date.now() - 10000, hops: 1, delivered: true });
+  }, 500);
+  setTimeout(() => {
+    addMessage({ from_name: 'BRAVO', to_name: 'all', content: 'Reticulum node online, announcing presence', timestamp: Date.now() - 5000, hops: 2, delivered: true,
+      route: ['BRAVO', 'ALPHA', 'YOU'] });
+  }, 1500);
+  setTimeout(() => {
+    addMessage({ from_name: 'CHARLIE', to_name: 'DELTA', content: 'Relaying packet via mesh', timestamp: Date.now() - 2000, hops: 1, delivered: true,
+      route: ['CHARLIE', 'DELTA'] });
+  }, 2500);
+  setTimeout(() => {
+    addMessage({ from_name: 'DELTA', to_name: 'YOU', content: 'Weak signal, trying alternate route', timestamp: Date.now(), hops: 3, delivered: false,
+      route: ['DELTA', 'CHARLIE', 'ALPHA', 'YOU'] });
+  }, 4000);
+
+  // Periodic demo updates
+  setInterval(() => {
+    if (S.paused) return;
+    // Jitter signals
+    S.wifi.forEach(ap => {
+      ap.rssi += (Math.random() - 0.5) * 4;
+      ap.rssi = Math.max(-95, Math.min(-25, ap.rssi));
+      // Slowly rotate azimuth to simulate real movement
+      ap.azimuth_deg = (ap.azimuth_deg + (Math.random() - 0.5) * 2) % 360;
+      if (ap.azimuth_deg < 0) ap.azimuth_deg += 360;
+    });
+    S.ble.forEach(d => {
+      d.rssi += (Math.random() - 0.5) * 3;
+      d.rssi = Math.max(-95, Math.min(-25, d.rssi));
+      d.azimuth_deg = (d.azimuth_deg + (Math.random() - 0.5) * 2) % 360;
+      if (d.azimuth_deg < 0) d.azimuth_deg += 360;
+    });
+    S.meshNodes.forEach(n => {
+      if (n.rssi_estimate) {
+        n.rssi_estimate += (Math.random() - 0.5) * 3;
+        n.rssi_estimate = Math.max(-90, Math.min(-30, n.rssi_estimate));
+      }
+    });
+    S.meshLinks.forEach(l => {
+      l.quality += (Math.random() - 0.5) * 0.05;
+      l.quality = Math.max(0.1, Math.min(1, l.quality));
+      // Push to quality_history
+      if (l.quality_history) {
+        l.quality_history.push([Date.now(), l.quality]);
+        if (l.quality_history.length > 30) l.quality_history.shift();
+      }
+    });
+
+    // Slowly drift heading to simulate camera movement
+    demoHeading = (demoHeading + (Math.random() - 0.3) * 3) % 360;
+    if (demoHeading < 0) demoHeading += 360;
+    S.camera.heading = demoHeading;
+    S.camera.angular_velocity = (Math.random() - 0.5) * 20;
+
+    // Recalculate direction_boost based on heading
+    const heading = S.camera.heading;
+    S.wifi.forEach(ap => {
+      const diff = Math.abs(angleDiffSigned(ap.azimuth_deg, heading));
+      ap.direction_boost = Math.max(0, 1 - diff / 60);
+    });
+    S.ble.forEach(dev => {
+      const diff = Math.abs(angleDiffSigned(dev.azimuth_deg, heading));
+      dev.direction_boost = Math.max(0, 1 - diff / 60);
+    });
+
+    // Update heatmap
+    for (let i = 0; i < 12; i++) {
+      const sectorStart = i * 30;
+      let strongest = null;
+      S.wifi.forEach(ap => {
+        const diff = Math.abs(angleDiffSigned(ap.azimuth_deg, sectorStart + 15));
+        if (diff < 15) {
+          if (strongest === null || ap.rssi > strongest) strongest = ap.rssi;
+        }
+      });
+      if (strongest !== null) S.wifiHeatmap[String(i)] = strongest;
+      else delete S.wifiHeatmap[String(i)];
+    }
+
+    // Update BLE density
+    S.bleDensity.per_sector = new Array(12).fill(0);
+    S.ble.forEach(dev => {
+      const sector = Math.floor(((dev.azimuth_deg % 360) + 360) % 360 / 30);
+      S.bleDensity.per_sector[sector]++;
+    });
+    S.bleDensity.total = S.ble.length;
+
+    updateSpectrum();
+    buildRadarBlips();
+    updateSignalBars();
+    document.getElementById('s-hdg').textContent = String(Math.round(S.camera.heading)).padStart(3, '0');
+
+    // Demo: jitter sensing data
+    var fr = S.sensing.fast_rssi;
+    fr.current_rssi = Math.max(-90, Math.min(-30, fr.current_rssi + (Math.random() - 0.5) * 3));
+    fr.snr = Math.max(5, Math.min(50, fr.snr + (Math.random() - 0.5) * 2));
+    fr.heart_rate.rate_bpm = Math.max(55, Math.min(100, fr.heart_rate.rate_bpm + (Math.random() - 0.5) * 3));
+    fr.breathing.rate_bpm = Math.max(10, Math.min(24, fr.breathing.rate_bpm + (Math.random() - 0.5) * 0.5));
+    fr.motion.level = Math.max(0, Math.min(1, fr.motion.level + (Math.random() - 0.5) * 0.08));
+    fr.presence.duration_s += 2;
+
+    // Update RSSI sparkline (shift left, add new)
+    if (fr.rssi_sparkline.length > 60) fr.rssi_sparkline.shift();
+    fr.rssi_sparkline.push(Math.round(fr.current_rssi));
+
+    // Jitter presence map
+    for (var pi = 0; pi < 12; pi++) {
+      S.sensing.presence.presence_map[pi] = Math.max(0, Math.min(1, S.sensing.presence.presence_map[pi] + (Math.random() - 0.5) * 0.05));
+    }
+
+    // Jitter blob azimuth slightly
+    if (S.sensing.presence.blobs && S.sensing.presence.blobs.length > 0) {
+      S.sensing.presence.blobs[0].azimuth = (S.sensing.presence.blobs[0].azimuth + (Math.random() - 0.5) * 3) % 360;
+      if (S.sensing.presence.blobs[0].azimuth < 0) S.sensing.presence.blobs[0].azimuth += 360;
+      S.sensing.presence.blobs[0].intensity = Math.max(0.2, Math.min(1, S.sensing.presence.blobs[0].intensity + (Math.random() - 0.5) * 0.05));
+    }
+
+    // Occasional anomaly demo
+    if (Math.random() < 0.05) {
+      processAnomalies([{ direction_sector: Math.floor(Math.random() * 12), type: 'signal_spike' }]);
+    }
+
+    updateVitalSignsPanel();
+    drawRssiWaveform();
+  }, 2000);
+
+  // Periodic demo messages
+  const demoMsgs = [
+    { from_name: 'ECHO', content: 'Heartbeat OK' },
+    { from_name: 'ALPHA', content: 'Scanning nearby nodes...' },
+    { from_name: 'BRAVO', content: 'Route updated: 2 hops to DELTA', route: ['BRAVO', 'ALPHA', 'ECHO'] },
+    { from_name: 'CHARLIE', content: 'LoRa signal fading, switching freq' },
+    { from_name: 'DELTA', content: 'Packet received, ACK sent', route: ['DELTA', 'CHARLIE', 'YOU'] },
+    { from_name: 'ALICE', content: 'Shared user ping from 37.77N' },
+  ];
+  let demoMsgIdx = 0;
+  setInterval(() => {
+    if (S.paused) return;
+    const m = demoMsgs[demoMsgIdx % demoMsgs.length];
+    demoMsgIdx++;
+    addMessage({
+      from_name: m.from_name, to_name: 'all', content: m.content,
+      timestamp: Date.now(), hops: Math.ceil(Math.random() * 3),
+      delivered: Math.random() > 0.15, route: m.route
+    });
+  }, 6000);
+}
+
+// ===== INIT =====
+function init() {
+  onResize();
+  connectWS();
+
+  // Inject demo data if WS doesn't connect in 2s
+  setTimeout(() => {
+    if (!S.wsConnected && S.graphNodes.length === 0) {
+      console.log('[HUD] No WS connection, loading demo data');
+      injectDemoData();
+    }
+  }, 2000);
+
+  requestAnimationFrame(mainLoop);
+}
+
+init();
+</script>
+</body>
+</html>

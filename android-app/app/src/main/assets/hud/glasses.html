@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=640,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>MESH VISION // GLASSES HUD</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --neon:#00ff41;--cyan:#00d4ff;--orange:#ff6b00;--red:#ff0040;
+  --purple:#bb44ff;--bg:#000;--panel:rgba(0,20,0,0.7);--border:rgba(0,255,65,0.3);
+}
+@font-face{font-family:'Mono';src:local('JetBrains Mono'),local('Menlo'),local('monospace');}
+html,body{width:640px;height:480px;overflow:hidden;background:var(--bg);
+  font-family:'JetBrains Mono','Menlo','Courier New',monospace;color:var(--neon);font-size:14px;}
+
+/* Subtle scanlines */
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+  background:repeating-linear-gradient(0deg,transparent,transparent 4px,rgba(0,255,65,0.02) 4px,rgba(0,255,65,0.02) 5px);
+  pointer-events:none;z-index:9998;}
+
+/* ═══ TOP STATUS BAR ═══ */
+#top-bar{height:32px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 12px;background:var(--panel);border-bottom:1px solid var(--border);
+  font-size:14px;font-weight:600;letter-spacing:1px;gap:8px;flex-shrink:0;}
+#top-bar .sep{width:1px;height:18px;background:var(--border);flex-shrink:0;}
+.top-item{display:flex;align-items:center;gap:4px;white-space:nowrap;}
+#sig-dbm{color:var(--cyan);font-size:16px;font-weight:700;text-shadow:0 0 8px var(--cyan);}
+#mesh-peers{color:var(--orange);font-size:14px;font-weight:700;text-shadow:0 0 6px var(--orange);}
+#heading-val{color:var(--neon);font-size:14px;font-weight:700;text-shadow:0 0 6px var(--neon);}
+#ws-dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);
+  transition:all 0.3s;flex-shrink:0;}
+#ws-dot.connected{background:var(--neon);box-shadow:0 0 8px var(--neon);}
+#snr-val{color:var(--neon);font-size:13px;}
+
+/* ═══ MAIN CONTENT ═══ */
+#main{display:flex;height:calc(480px - 32px - 44px);gap:0;}
+
+/* Radar panel - left */
+#radar-panel{width:220px;height:100%;position:relative;border-right:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+#radar-canvas{position:absolute;top:0;left:0;}
+#radar-label{position:absolute;top:4px;left:8px;font-size:10px;color:var(--neon);
+  letter-spacing:2px;text-shadow:0 0 6px var(--neon);opacity:0.8;z-index:2;}
+#wifi-count{position:absolute;bottom:4px;left:8px;font-size:11px;color:var(--neon);opacity:0.9;z-index:2;}
+#ble-count{position:absolute;bottom:4px;right:8px;font-size:11px;color:var(--cyan);opacity:0.9;z-index:2;}
+
+/* Message feed panel - right */
+#msg-panel{flex:1;display:flex;flex-direction:column;background:var(--panel);overflow:hidden;}
+#msg-header{font-size:11px;color:var(--cyan);letter-spacing:2px;padding:6px 10px 4px;
+  text-shadow:0 0 6px var(--cyan);opacity:0.8;border-bottom:1px solid var(--border);flex-shrink:0;}
+#mesh-status-row{display:flex;align-items:center;gap:5px;padding:3px 10px;
+  border-bottom:1px solid var(--border);flex-shrink:0;font-size:11px;}
+#mesh-dot{width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 4px var(--red);
+  transition:all 0.3s;}
+#mesh-dot.online{background:var(--purple);box-shadow:0 0 6px var(--purple);}
+#mesh-status-text{color:rgba(187,68,255,0.7);letter-spacing:1px;font-size:11px;}
+
+/* Last message bubble */
+#last-msg-bubble{padding:8px 10px;background:rgba(0,255,65,0.06);border-bottom:1px solid var(--border);
+  flex-shrink:0;min-height:40px;}
+#last-msg-bubble .bubble-from{color:var(--cyan);font-weight:600;font-size:13px;}
+#last-msg-bubble .bubble-text{color:var(--neon);font-size:15px;font-weight:600;
+  text-shadow:0 0 4px var(--neon);margin-top:2px;word-break:break-word;max-height:40px;overflow:hidden;}
+#last-msg-bubble .bubble-time{color:rgba(0,255,65,0.4);font-size:10px;margin-top:2px;}
+#last-msg-bubble.mesh-native .bubble-from{color:var(--purple);}
+#last-msg-bubble.mesh-native .bubble-text{color:var(--purple);text-shadow:0 0 4px var(--purple);}
+
+/* Scrolling message feed */
+#feed{flex:1;overflow-y:auto;padding:4px 8px;scrollbar-width:thin;scrollbar-color:var(--neon) transparent;}
+#feed::-webkit-scrollbar{width:3px;}
+#feed::-webkit-scrollbar-thumb{background:var(--neon);border-radius:2px;}
+.msg{margin:3px 0;padding:4px 8px;background:rgba(0,255,65,0.04);border-left:2px solid var(--neon);
+  border-radius:0 3px 3px 0;font-size:12px;word-break:break-word;}
+.msg .msg-from{color:var(--cyan);font-weight:600;font-size:12px;}
+.msg .msg-content{color:var(--neon);margin:1px 0;font-size:13px;}
+.msg .msg-meta{color:rgba(0,255,65,0.4);font-size:10px;}
+.msg.mesh-native{border-left-color:var(--purple);background:rgba(187,68,255,0.06);}
+.msg.mesh-native .msg-from{color:var(--purple);}
+
+/* ═══ BOTTOM BAR ═══ */
+#bottom-bar{height:44px;display:flex;align-items:center;gap:6px;padding:0 8px;
+  background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;}
+#chat-input{flex:1;background:rgba(0,20,0,0.8);border:1px solid var(--border);color:var(--neon);
+  font-family:inherit;font-size:14px;padding:6px 10px;outline:none;height:32px;border-radius:3px;}
+#chat-input:focus{border-color:var(--neon);box-shadow:0 0 8px rgba(0,255,65,0.3);}
+#chat-send{background:var(--panel);border:1px solid var(--neon);color:var(--neon);
+  font-family:inherit;font-size:12px;padding:6px 10px;cursor:pointer;border-radius:3px;
+  height:32px;letter-spacing:1px;}
+#chat-send:active{background:rgba(0,255,65,0.2);}
+
+/* Voice button - BIG and prominent */
+#voice-btn{width:60px;height:34px;border:2px solid var(--purple);background:rgba(187,68,255,0.1);
+  color:var(--purple);font-family:inherit;font-size:18px;cursor:pointer;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+#voice-btn:active{background:rgba(187,68,255,0.3);}
+#voice-btn.recording{background:rgba(255,0,64,0.2);border-color:var(--red);color:var(--red);
+  animation:voice-pulse 0.6s ease-in-out infinite;}
+
+/* Recording indicator - big red dot */
+#rec-indicator{position:fixed;top:36px;right:12px;width:16px;height:16px;border-radius:50%;
+  background:var(--red);box-shadow:0 0 12px var(--red),0 0 24px rgba(255,0,64,0.4);
+  z-index:100;display:none;animation:rec-pulse 0.6s ease-in-out infinite;}
+#voice-status{position:fixed;top:38px;right:34px;font-size:11px;color:var(--red);
+  letter-spacing:1px;z-index:100;display:none;text-shadow:0 0 6px var(--red);}
+
+@keyframes voice-pulse{0%,100%{box-shadow:0 0 4px rgba(255,0,64,0.4);}50%{box-shadow:0 0 16px rgba(255,0,64,0.8);}}
+@keyframes rec-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(1.3);}}
+
+/* Stats line inside bottom bar */
+#stats-line{position:absolute;bottom:1px;left:0;right:0;text-align:center;
+  font-size:9px;color:rgba(0,255,65,0.3);letter-spacing:1px;pointer-events:none;}
+</style>
+</head>
+<body>
+
+<!-- Recording indicator (pulsing red dot) -->
+<div id="rec-indicator"></div>
+<div id="voice-status">REC</div>
+
+<!-- TOP STATUS BAR -->
+<div id="top-bar">
+  <div id="ws-dot"></div>
+  <div class="top-item">SIG: <span id="sig-dbm">--</span>dBm</div>
+  <div class="sep"></div>
+  <div class="top-item">MESH: <span id="mesh-peers">0</span> PEERS</div>
+  <div class="sep"></div>
+  <div class="top-item">HDG: <span id="heading-val">---</span>°</div>
+  <div class="sep"></div>
+  <div class="top-item">SNR: <span id="snr-val">--</span></div>
+  <div class="sep"></div>
+  <div class="top-item">WiFi:<span id="s-wifi" style="color:var(--cyan)">0</span> BLE:<span id="s-ble" style="color:var(--cyan)">0</span></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="main">
+  <!-- RADAR -->
+  <div id="radar-panel">
+    <div id="radar-label">◈ RADAR</div>
+    <canvas id="radar-canvas"></canvas>
+    <div id="wifi-count">W: <span id="wifi-n">0</span></div>
+    <div id="ble-count">B: <span id="ble-n">0</span></div>
+  </div>
+
+  <!-- MESSAGE FEED -->
+  <div id="msg-panel">
+    <div id="msg-header">◈ MESH MESSAGES</div>
+    <div id="mesh-status-row">
+      <div id="mesh-dot"></div>
+      <span id="mesh-status-text">PI MESH: OFFLINE</span>
+    </div>
+    <div id="last-msg-bubble">
+      <div class="bubble-from">--</div>
+      <div class="bubble-text">No messages yet</div>
+      <div class="bubble-time"></div>
+    </div>
+    <div id="feed"></div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div id="bottom-bar">
+  <input id="chat-input" type="text" placeholder="Type message..." autocomplete="off">
+  <button id="chat-send">TX</button>
+  <button id="voice-btn">🎤</button>
+</div>
+
+<script>
+// ===== STATE =====
+const S = {
+  wifi: [], ble: [], meshNodes: [], meshLinks: [],
+  camera: { heading: 0 },
+  wsConnected: false,
+  radarBlips: [],
+  allMessages: [],
+  sensing: {
+    fast_rssi: { current_rssi: -70, noise_floor: -92, snr: 22 },
+    environment: { strongest_aps: [] }
+  }
+};
+
+// ===== UTILITY FUNCTIONS =====
+function hashCode(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+function rssiToDistance(rssi) {
+  const c = Math.max(-100, Math.min(-20, rssi));
+  return 0.1 + 0.9 * (1 - (c + 100) / 80);
+}
+function rssiToRadius(rssi) {
+  const c = Math.max(-100, Math.min(-20, rssi));
+  return 3 + 7 * ((c + 100) / 80);  // bigger blips for glasses
+}
+function degToRad(d) { return d * Math.PI / 180; }
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function relativeTime(ts) {
+  if (!ts) return '';
+  const now = Date.now();
+  let t = typeof ts === 'number' ? (ts > 1e12 ? ts : ts * 1000) : new Date(ts).getTime();
+  const diff = Math.max(0, Math.floor((now - t) / 1000));
+  if (diff < 5) return 'now';
+  if (diff < 60) return diff + 's';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm';
+  return Math.floor(diff / 3600) + 'h';
+}
+
+// ===== RADAR =====
+const radarCanvas = document.getElementById('radar-canvas');
+const radarCtx = radarCanvas.getContext('2d');
+let radarCx, radarCy, radarR, radarAngle = 0;
+
+function resizeRadar() {
+  const wrap = document.getElementById('radar-panel');
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  const sz = Math.min(w, h) - 16;
+  radarCanvas.width = w * devicePixelRatio;
+  radarCanvas.height = h * devicePixelRatio;
+  radarCanvas.style.width = w + 'px';
+  radarCanvas.style.height = h + 'px';
+  radarCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  radarCx = w / 2;
+  radarCy = h / 2;
+  radarR = sz / 2;
+}
+
+function buildRadarBlips() {
+  const blips = [];
+  S.wifi.forEach(ap => {
+    const azDeg = ap.azimuth_deg !== undefined ? ap.azimuth_deg : (hashCode(ap.bssid || ap.ssid || '') % 360);
+    blips.push({ type:'wifi', name:ap.ssid||ap.bssid, rssi:ap.rssi,
+      azimuth:degToRad(azDeg), azimuthDeg:azDeg,
+      distance:rssiToDistance(ap.rssi), radius:rssiToRadius(ap.rssi),
+      color:'#00ff41', glow:ap.rssi > -60 });
+  });
+  S.ble.forEach(dev => {
+    const azDeg = dev.azimuth_deg !== undefined ? dev.azimuth_deg : (hashCode(dev.address || dev.name || '') % 360);
+    blips.push({ type:'ble', name:dev.name||dev.address, rssi:dev.rssi,
+      azimuth:degToRad(azDeg), azimuthDeg:azDeg,
+      distance:rssiToDistance(dev.rssi), radius:rssiToRadius(dev.rssi),
+      color:'#00d4ff', glow:dev.rssi > -60 });
+  });
+  S.meshNodes.forEach(node => {
+    let azDeg;
+    if (node.position && node.position.azimuth !== undefined) azDeg = node.position.azimuth;
+    else azDeg = hashCode(node.id || node.name || '') % 360;
+    const rssi = node.rssi_estimate || -70;
+    blips.push({ type:'mesh', name:node.name||node.id, rssi:rssi,
+      azimuth:degToRad(azDeg), azimuthDeg:azDeg,
+      distance:rssiToDistance(rssi), radius:rssiToRadius(rssi),
+      color:'#ff6b00', glow:rssi > -60 });
+  });
+  S.radarBlips = blips;
+}
+
+function isBlipInCone(blipAzDeg) {
+  const heading = S.camera.heading || 0;
+  let diff = blipAzDeg - heading;
+  while (diff > 180) diff -= 360;
+  while (diff < -180) diff += 360;
+  return Math.abs(diff) <= 30;
+}
+
+function drawRadar(dt) {
+  const ctx = radarCtx;
+  const wrap = document.getElementById('radar-panel');
+  ctx.clearRect(0, 0, wrap.clientWidth, wrap.clientHeight);
+
+  // Background circle
+  ctx.beginPath();
+  ctx.arc(radarCx, radarCy, radarR, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0, 20, 0, 0.4)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Range rings
+  [0.33, 0.66].forEach(f => {
+    ctx.beginPath();
+    ctx.arc(radarCx, radarCy, radarR * f, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 255, 65, 0.12)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+
+  // Cross hairs
+  ctx.beginPath();
+  ctx.moveTo(radarCx - radarR, radarCy);
+  ctx.lineTo(radarCx + radarR, radarCy);
+  ctx.moveTo(radarCx, radarCy - radarR);
+  ctx.lineTo(radarCx, radarCy + radarR);
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.08)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Vision cone (camera heading)
+  const heading = S.camera.heading || 0;
+  const centerAngle = degToRad(heading - 90);
+  const halfCone = degToRad(30);
+  const startAngle = centerAngle - halfCone;
+  const endAngle = centerAngle + halfCone;
+
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.arc(radarCx, radarCy, radarR + 2, startAngle, endAngle);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 255, 65, 0.1)';
+  ctx.fill();
+
+  // Cone edge lines
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.lineTo(radarCx + Math.cos(startAngle) * (radarR + 2), radarCy + Math.sin(startAngle) * (radarR + 2));
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.lineTo(radarCx + Math.cos(endAngle) * (radarR + 2), radarCy + Math.sin(endAngle) * (radarR + 2));
+  ctx.stroke();
+
+  // Sweep line
+  radarAngle += dt * 0.8;
+  if (radarAngle > Math.PI * 2) radarAngle -= Math.PI * 2;
+
+  for (let i = 0; i < 20; i++) {
+    const a = radarAngle - (i * 0.025);
+    const alpha = (20 - i) / 20 * 0.35;
+    ctx.beginPath();
+    ctx.moveTo(radarCx, radarCy);
+    ctx.lineTo(radarCx + Math.cos(a) * radarR, radarCy + Math.sin(a) * radarR);
+    ctx.strokeStyle = `rgba(0, 255, 65, ${alpha})`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  // Main sweep
+  ctx.beginPath();
+  ctx.moveTo(radarCx, radarCy);
+  ctx.lineTo(radarCx + Math.cos(radarAngle) * radarR, radarCy + Math.sin(radarAngle) * radarR);
+  ctx.strokeStyle = 'rgba(0, 255, 65, 0.9)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(radarCx, radarCy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#00ff41';
+  ctx.fill();
+
+  // Blips
+  S.radarBlips.forEach(b => {
+    const drawAngle = b.azimuth - Math.PI / 2;
+    const bx = radarCx + Math.cos(drawAngle) * b.distance * radarR;
+    const by = radarCy + Math.sin(drawAngle) * b.distance * radarR;
+
+    const inCone = isBlipInCone(b.azimuthDeg);
+
+    // Fade based on sweep angle
+    let sweepDiff = radarAngle - drawAngle;
+    while (sweepDiff < 0) sweepDiff += Math.PI * 2;
+    while (sweepDiff > Math.PI * 2) sweepDiff -= Math.PI * 2;
+    const fadeAlpha = sweepDiff < Math.PI ? Math.max(0.2, 1 - sweepDiff / Math.PI) : 0.2;
+    let alpha = b.glow ? Math.max(fadeAlpha, 0.7) : fadeAlpha;
+    let drawRadius = b.radius;
+
+    if (inCone) {
+      alpha = Math.min(1, alpha * 1.5 + 0.2);
+      drawRadius *= 1.4;
+    } else {
+      alpha *= 0.6;
+    }
+
+    // Glow for strong/in-cone blips
+    if (b.glow || inCone) {
+      const gr = ctx.createRadialGradient(bx, by, 0, bx, by, drawRadius + 6);
+      gr.addColorStop(0, b.color + Math.round(alpha * 80).toString(16).padStart(2, '0'));
+      gr.addColorStop(1, 'transparent');
+      ctx.beginPath();
+      ctx.arc(bx, by, drawRadius + 6, 0, Math.PI * 2);
+      ctx.fillStyle = gr;
+      ctx.fill();
+    }
+
+    // Main blip
+    ctx.beginPath();
+    ctx.arc(bx, by, drawRadius, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // In-cone highlight ring
+    if (inCone) {
+      ctx.beginPath();
+      ctx.arc(bx, by, drawRadius + 2, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  });
+
+  // Compass heading text at top of radar
+  ctx.font = '600 12px monospace';
+  ctx.fillStyle = '#ff6b00';
+  ctx.textAlign = 'center';
+  const hdg = String(Math.round(S.camera.heading || 0)).padStart(3, '0');
+  ctx.fillText(hdg + '°', radarCx, 16);
+
+  // N/E/S/W markers
+  ctx.font = '10px monospace';
+  ctx.fillStyle = 'rgba(0,255,65,0.5)';
+  ctx.fillText('N', radarCx, radarCy - radarR + 10);
+  ctx.fillText('S', radarCx, radarCy + radarR - 4);
+  ctx.textAlign = 'left';
+  ctx.fillText('E', radarCx + radarR - 12, radarCy + 4);
+  ctx.textAlign = 'right';
+  ctx.fillText('W', radarCx - radarR + 12, radarCy + 4);
+  ctx.textAlign = 'start';
+}
+
+// ===== MESSAGE FEED =====
+const feed = document.getElementById('feed');
+const lastBubble = document.getElementById('last-msg-bubble');
+const MAX_MESSAGES = 5;
+
+function addMessage(msg) {
+  S.allMessages.push(msg);
+  if (S.allMessages.length > 50) S.allMessages.shift();
+
+  const isMeshNative = msg.mesh_native || false;
+
+  // Update last message bubble (top prominent area)
+  lastBubble.className = 'last-msg-bubble' + (isMeshNative ? ' mesh-native' : '');
+  lastBubble.querySelector('.bubble-from').textContent = (msg.from_name || '???') + ' → ' + (msg.to_name || 'all');
+  lastBubble.querySelector('.bubble-text').textContent = msg.content || '';
+  lastBubble.querySelector('.bubble-time').textContent = relativeTime(msg.timestamp);
+
+  // Add to scrolling feed (keep last 5)
+  const div = document.createElement('div');
+  div.className = 'msg' + (isMeshNative ? ' mesh-native' : '');
+  div.innerHTML = `<span class="msg-from">${escapeHtml(msg.from_name || '???')}</span>: ` +
+    `<span class="msg-content">${escapeHtml(msg.content || '')}</span>` +
+    `<div class="msg-meta">${msg.hops !== undefined ? msg.hops + 'h · ' : ''}${relativeTime(msg.timestamp)}</div>`;
+  feed.appendChild(div);
+
+  // Trim to MAX_MESSAGES
+  while (feed.children.length > MAX_MESSAGES) feed.removeChild(feed.firstChild);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// ===== CHAT + SEND =====
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
+
+function sendChat() {
+  const content = chatInput.value.trim();
+  if (!content) return;
+  chatInput.value = '';
+
+  fetch('/api/send-message', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content })
+  }).then(r => r.json()).then(res => {
+    if (res.status === 'queued' || res.status === 'sent') {
+      addMessage({ from_name:'YOU', to_name:'all', content, timestamp:Date.now()/1000, hops:1, delivered:true });
+    }
+  }).catch(() => {
+    addMessage({ from_name:'YOU', to_name:'all', content, timestamp:Date.now()/1000, hops:0, delivered:false });
+  });
+
+  // Bridge to Pi MeshChat
+  fetch('/api/mesh-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content })
+  }).catch(() => {});
+}
+
+chatSend.addEventListener('click', sendChat);
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+
+// ===== VOICE RECORDING =====
+let voiceRecording = false;
+let voiceMediaRecorder = null;
+let voiceChunks = [];
+let voiceTimeout = null;
+const voiceBtn = document.getElementById('voice-btn');
+const recIndicator = document.getElementById('rec-indicator');
+const voiceStatusEl = document.getElementById('voice-status');
+
+async function startVoiceRecording() {
+  if (voiceRecording) { stopVoiceRecording(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    voiceRecording = true;
+    voiceChunks = [];
+    voiceBtn.classList.add('recording');
+    recIndicator.style.display = 'block';
+    voiceStatusEl.style.display = 'block';
+    voiceStatusEl.textContent = 'REC';
+
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    voiceMediaRecorder = new MediaRecorder(stream, { mimeType });
+
+    voiceMediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) voiceChunks.push(e.data);
+    };
+
+    voiceMediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      voiceBtn.classList.remove('recording');
+      recIndicator.style.display = 'none';
+      voiceStatusEl.style.display = 'none';
+      voiceRecording = false;
+      clearTimeout(voiceTimeout);
+      if (voiceChunks.length === 0) return;
+      processVoiceAudio();
+    };
+
+    voiceMediaRecorder.start(250);
+    voiceTimeout = setTimeout(() => { if (voiceRecording) stopVoiceRecording(); }, 10000);
+
+  } catch (err) {
+    console.error('[Voice] Mic access denied:', err);
+    voiceStatusEl.textContent = '⚠ MIC DENIED';
+    voiceStatusEl.style.display = 'block';
+    recIndicator.style.display = 'none';
+    setTimeout(() => { voiceStatusEl.style.display = 'none'; }, 2000);
+  }
+}
+
+function stopVoiceRecording() {
+  if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') {
+    voiceMediaRecorder.stop();
+  }
+}
+
+async function processVoiceAudio() {
+  const blob = new Blob(voiceChunks, { type: voiceChunks[0]?.type || 'audio/webm' });
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const base64Audio = reader.result.split(',')[1];
+    voiceStatusEl.textContent = '⏳ TX...';
+    voiceStatusEl.style.display = 'block';
+
+    fetch('/api/voice-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audio: base64Audio, format: blob.type })
+    }).then(r => r.json()).then(res => {
+      voiceStatusEl.style.display = 'none';
+      if (res.text && res.text.trim()) {
+        chatInput.value = res.text.trim();
+        chatInput.style.borderColor = '#bb44ff';
+        chatInput.style.boxShadow = '0 0 8px rgba(187,68,255,0.5)';
+        setTimeout(() => {
+          chatInput.style.borderColor = '';
+          chatInput.style.boxShadow = '';
+          sendChat();
+        }, 600);
+      } else {
+        voiceStatusEl.textContent = '⚠ NO SPEECH';
+        voiceStatusEl.style.display = 'block';
+        setTimeout(() => { voiceStatusEl.style.display = 'none'; }, 1500);
+      }
+    }).catch(() => {
+      voiceStatusEl.textContent = '⚠ FAIL';
+      voiceStatusEl.style.display = 'block';
+      setTimeout(() => { voiceStatusEl.style.display = 'none'; }, 1500);
+    });
+  };
+  reader.readAsDataURL(blob);
+}
+
+voiceBtn.addEventListener('click', startVoiceRecording);
+
+// ===== PI MESH STATUS POLLING =====
+let meshStatusOnline = false;
+const meshDot = document.getElementById('mesh-dot');
+const meshStatusText = document.getElementById('mesh-status-text');
+
+function pollMeshStatus() {
+  fetch('/api/mesh-chat/status').then(r => r.json()).then(res => {
+    meshStatusOnline = !!(res.connected || res.online || res.status === 'connected');
+    if (meshStatusOnline) {
+      meshDot.classList.add('online');
+      meshStatusText.textContent = 'PI MESH: ONLINE' + (res.nodes ? ' · ' + res.nodes + ' nodes' : '');
+    } else {
+      meshDot.classList.remove('online');
+      meshStatusText.textContent = 'PI MESH: OFFLINE';
+    }
+  }).catch(() => {
+    meshStatusOnline = false;
+    meshDot.classList.remove('online');
+    meshStatusText.textContent = 'PI MESH: OFFLINE';
+  });
+}
+setInterval(pollMeshStatus, 8000);
+pollMeshStatus();
+
+// Poll Pi mesh messages
+function pollMeshMessages() {
+  fetch('/api/mesh-chat/messages').then(r => r.json()).then(msgs => {
+    if (!Array.isArray(msgs)) return;
+    msgs.forEach(m => {
+      if (!S.allMessages.find(x => x.content === m.content && x.from_name === (m.from || m.from_name))) {
+        addMessage({
+          from_name: m.from || m.from_name || 'mesh',
+          to_name: m.to || m.to_name || 'all',
+          content: m.content || m.message || '',
+          timestamp: m.timestamp || Date.now()/1000,
+          hops: m.hops || 0,
+          delivered: true,
+          mesh_native: true
+        });
+      }
+    });
+  }).catch(() => {});
+}
+setInterval(pollMeshMessages, 5000);
+
+// ===== WEBSOCKET =====
+let ws = null;
+let prevMsgCount = 0;
+
+function connectWS() {
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+
+  const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+  ws = new WebSocket(wsProto + location.host + '/ws/mesh');
+
+  ws.onopen = () => {
+    S.wsConnected = true;
+    document.getElementById('ws-dot').classList.add('connected');
+  };
+
+  ws.onclose = () => {
+    S.wsConnected = false;
+    document.getElementById('ws-dot').classList.remove('connected');
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => { ws.close(); };
+
+  ws.onmessage = (evt) => {
+    try {
+      const data = JSON.parse(evt.data);
+      S.wifi = data.wifi || [];
+      S.ble = data.ble || [];
+      S.meshNodes = data.mesh_nodes || [];
+      S.meshLinks = data.mesh_links || [];
+      if (data.camera) S.camera = { ...S.camera, ...data.camera };
+
+      if (data.sensing) {
+        if (data.sensing.fast_rssi) Object.assign(S.sensing.fast_rssi, data.sensing.fast_rssi);
+        if (data.sensing.environment) Object.assign(S.sensing.environment, data.sensing.environment);
+      }
+
+      // New messages
+      const msgs = data.mesh_messages || [];
+      if (msgs.length > prevMsgCount) {
+        for (let i = prevMsgCount; i < msgs.length; i++) {
+          addMessage(msgs[i]);
+        }
+      }
+      prevMsgCount = msgs.length;
+
+      // Rebuild radar
+      buildRadarBlips();
+
+      // Update top bar
+      updateTopBar();
+
+    } catch (e) { console.error('WS parse:', e); }
+  };
+}
+
+// ===== UPDATE TOP BAR =====
+function updateTopBar() {
+  // Strongest signal in view
+  let strongest = -999;
+  S.radarBlips.forEach(b => {
+    if (b.type === 'wifi' && isBlipInCone(b.azimuthDeg) && b.rssi > strongest) {
+      strongest = b.rssi;
+    }
+  });
+  // Fallback: strongest AP overall
+  if (strongest === -999) {
+    S.wifi.forEach(ap => { if (ap.rssi > strongest) strongest = ap.rssi; });
+  }
+  document.getElementById('sig-dbm').textContent = strongest > -999 ? strongest : '--';
+
+  // Mesh peers
+  document.getElementById('mesh-peers').textContent = S.meshNodes.length;
+
+  // Heading
+  document.getElementById('heading-val').textContent =
+    String(Math.round(S.camera.heading || 0)).padStart(3, '0');
+
+  // SNR
+  const snr = S.sensing.fast_rssi.snr;
+  const snrEl = document.getElementById('snr-val');
+  snrEl.textContent = snr ? snr + 'dB' : '--';
+  if (snr > 20) snrEl.style.color = '#00ff41';
+  else if (snr > 10) snrEl.style.color = '#ffcc00';
+  else snrEl.style.color = '#ff0040';
+
+  // WiFi/BLE counts
+  document.getElementById('s-wifi').textContent = S.wifi.length;
+  document.getElementById('s-ble').textContent = S.ble.length;
+  document.getElementById('wifi-n').textContent = S.wifi.length;
+  document.getElementById('ble-n').textContent = S.ble.length;
+}
+
+// ===== ANIMATION LOOP =====
+let lastTime = performance.now();
+function animate(now) {
+  const dt = Math.min((now - lastTime) / 1000, 0.1);
+  lastTime = now;
+  drawRadar(dt);
+  requestAnimationFrame(animate);
+}
+
+// ===== INIT =====
+resizeRadar();
+window.addEventListener('resize', resizeRadar);
+connectWS();
+requestAnimationFrame(animate);
+
+// Periodic top bar refresh for relative times
+setInterval(() => {
+  // Refresh last bubble time
+  if (S.allMessages.length > 0) {
+    const last = S.allMessages[S.allMessages.length - 1];
+    lastBubble.querySelector('.bubble-time').textContent = relativeTime(last.timestamp);
+  }
+}, 5000);
+</script>
+</body>
+</html>

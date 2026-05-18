@@ -1,0 +1,9 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+id hud_web_view
+layout activity_mesh_vision
+mipmap ic_launcher
+string app_name
+style Theme.MeshVision

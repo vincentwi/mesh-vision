@@ -1,0 +1,27 @@
+[Unit]
+Description=MeshChat Web UI (Reticulum LXMF Messaging)
+Documentation=https://github.com/liamcottle/reticulum-meshchat
+After=network-online.target rnsd.service
+Wants=network-online.target
+Requires=rnsd.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+Environment=HOME=/home/pi
+# MeshChat listens on 0.0.0.0:8080 by default
+ExecStart=/usr/local/bin/meshchat --headless --host 0.0.0.0 --port 8080
+Restart=always
+RestartSec=10
+TimeoutStartSec=60
+StandardOutput=journal
+StandardError=journal
+
+# Hardening
+ProtectSystem=full
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

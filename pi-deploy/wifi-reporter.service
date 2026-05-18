@@ -1,0 +1,27 @@
+[Unit]
+Description=MeshVision WiFi Spectrum Reporter
+Documentation=https://github.com/meshvision
+After=network-online.target rnsd.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+Environment=HOME=/home/pi
+# Set the backend address — auto-discovers if empty
+# Environment=MESHVISION_BACKEND=10.0.10.1
+Environment=MESHVISION_PORT=3001
+Environment=MESHVISION_WIFI_IF=wlan0
+ExecStart=/usr/bin/python3 /opt/meshvision/wifi-reporter.py
+Restart=always
+RestartSec=15
+TimeoutStartSec=30
+StandardOutput=journal
+StandardError=journal
+
+# WiFi scanning needs elevated privileges
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+
+[Install]
+WantedBy=multi-user.target

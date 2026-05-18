@@ -1,0 +1,6 @@
+#!/Users/vinceroy/Desktop/APP/Glasses/mesh-vision/.venv/bin/python3
+import sys
+from RNS.Utilities.rnsd import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())

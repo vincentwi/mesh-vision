@@ -1,0 +1,33 @@
+# ============================================================
+#  Reticulum Config — Backend Aggregator Node
+#  Role: FastAPI server's own RNS identity; watches the mesh
+#  Ports: instance 37434 / control 37435
+#  Connects to: Transport node on localhost:4242
+#  Also: AutoInterface for direct LAN discovery
+# ============================================================
+
+[reticulum]
+  enable_transport = False
+  share_instance   = False
+
+  shared_instance_port  = 37434
+  instance_control_port = 37435
+
+  panic_on_interface_error = No
+
+[logging]
+  loglevel = 4
+
+[interfaces]
+
+  # LAN multicast auto-discovery
+  [[AutoInterface LAN]]
+    type    = AutoInterface
+    enabled = true
+
+  # Connect to the transport node to see the simulated mesh
+  [[TCP to Transport]]
+    type           = TCPClientInterface
+    enabled        = true
+    target_host    = 127.0.0.1
+    target_port    = 4242

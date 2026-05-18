@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.meshvision.app-mergeDebugResources-33:/layout/activity_mesh_vision.xml",
+        "source": "com.meshvision.app-main-36:/layout/activity_mesh_vision.xml"
+    }
+]
