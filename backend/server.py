@@ -1705,6 +1705,15 @@ async def api_mesh_chat_status() -> JSONResponse:
         return JSONResponse(content={"pi_meshchat": "error", "detail": str(exc)})
 
 
+@app.get("/api/mesh-chat/messages")
+async def api_mesh_chat_messages(request: Request) -> JSONResponse:
+    """Return mesh messages since a given timestamp."""
+    since = float(request.query_params.get("since", "0"))
+    with messages_lock:
+        msgs = [m for m in mesh_messages if m.get("timestamp", 0) > since]
+    return JSONResponse(content={"messages": msgs[-50:]})
+
+
 # ---------------------------------------------------------------------------
 # Discovered peers list endpoint
 # ---------------------------------------------------------------------------
