@@ -876,7 +876,7 @@ class EnvironmentMapper:
                 intersection = len(baseline_bssids & seen_bssids)
                 union = len(baseline_bssids | seen_bssids)
                 similarity = intersection / max(union, 1)
-                self._room_changed = similarity < 0.80
+                self._room_changed = similarity < 0.30  # Only flag major room changes
 
                 if self._room_changed:
                     logger.info('Room change detected (similarity=%.2f)', similarity)
