@@ -94,7 +94,7 @@ GROQ_API_KEY = _load_groq_key()
 # ---------------------------------------------------------------------------
 # Known Pi MeshChat identity (pre-configured for topology display)
 # ---------------------------------------------------------------------------
-PI_LXMF_HASH = "1190da39b618577fbe35527d60dcc03f"
+PI_LXMF_HASH = "22871c5306bf067746f09cc4ea819dde"
 PI_TRANSPORT_HASH = "03b7237d5e1c44dfcbcb517edc90cefc"
 
 # ---------------------------------------------------------------------------
@@ -1407,7 +1407,12 @@ def build_payload() -> Dict[str, Any]:
     sensing_data = {}
     if presence_est is not None and fast_rssi is not None and env_mapper is not None:
         try:
-            presence_est.update(fast_rssi.get_state(), env_mapper.get_state())
+            env_state = env_mapper.get_state()
+            # Auto-reset presence baseline when room changes
+            if env_state.get('room_changed', False):
+                fast_rssi.reset_baseline()
+                log.info("[sensing] Room change detected — auto-reset presence baseline")
+            presence_est.update(fast_rssi.get_state(), env_state)
         except Exception:
             log.debug("[sensing] presence_est.update error", exc_info=True)
         try:
@@ -1718,6 +1723,16 @@ async def api_environment() -> JSONResponse:
         return JSONResponse(content={"environment": env_mapper.get_state(), "timestamp": time.time()})
     except Exception as exc:
         return JSONResponse(content={"error": str(exc)}, status_code=500)
+
+
+@app.post("/api/sensing/reset-baseline")
+async def api_reset_baseline() -> JSONResponse:
+    """Force-reset the presence detection baseline.
+    Call this when: changing rooms, presence stuck on false, or on startup at a new location."""
+    if fast_rssi is None:
+        return JSONResponse(content={"error": "FastRssiMonitor not initialised"}, status_code=503)
+    fast_rssi.reset_baseline()
+    return JSONResponse(content={"status": "ok", "message": "Presence baseline reset. Recalibrating from next 10 seconds of readings."})
 
 
 # ---------------------------------------------------------------------------

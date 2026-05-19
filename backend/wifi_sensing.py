@@ -271,7 +271,7 @@ class FastRssiMonitor:
     # Presence detection
     PRESENCE_WINDOW = 300       # samples (30 seconds at 10 Hz)
     BASELINE_WINDOW = 100       # samples (10 seconds for noise baseline)
-    PRESENCE_THRESHOLD = 1.5    # variance ratio above noise baseline
+    PRESENCE_THRESHOLD = 1.2    # variance ratio above noise baseline (lowered from 1.5 for weaker home signals)
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -300,6 +300,7 @@ class FastRssiMonitor:
         self._presence_confidence: float = 0.0
         self._presence_start: Optional[float] = None
         self._baseline_variance: float = 1.0  # noise baseline
+        self._baseline_locked: bool = False   # True once baseline is set
 
         # Filter coefficients (computed once)
         self._breath_b: Optional[np.ndarray] = None
@@ -510,6 +511,20 @@ class FastRssiMonitor:
             (1.0 - self.MOTION_EMA_ALPHA) * self._motion_level
         )
 
+    def reset_baseline(self) -> None:
+        """Force-reset the presence baseline from the next 10 seconds of readings.
+        Call this when changing rooms or when presence is stuck."""
+        with self._lock:
+            self._baseline_locked = False
+            self._baseline_variance = 1.0
+            self._presence_detected = False
+            self._presence_confidence = 0.0
+            self._presence_start = None
+            # Reset sample count so baseline window re-triggers
+            # We keep the RSSI buffer intact for breathing/heart rate continuity
+            # but unlock the baseline so _compute_presence recalibrates
+            logger.info('Presence baseline reset requested — recalibrating from next 100 samples')
+
     def _compute_presence(self) -> None:
         """
         Presence detection: compare 30-second RSSI variance against baseline.
@@ -521,10 +536,15 @@ class FastRssiMonitor:
         The confidence is the ratio of current variance to baseline variance,
         clamped to [0, 1].
         """
-        # Update baseline from first readings
-        if self._count <= self.BASELINE_WINDOW and self._count >= 20:
-            baseline_data = self._get_recent(self._count)
+        # Update baseline from first readings (only once, or after reset)
+        if not self._baseline_locked and self._count >= 20:
+            # Use a sliding window for baseline: last 100 samples
+            n = min(self.BASELINE_WINDOW, self._count)
+            baseline_data = self._get_recent(n)
             self._baseline_variance = max(float(np.var(baseline_data)), 0.01)
+            if self._count >= self.BASELINE_WINDOW:
+                self._baseline_locked = True
+                logger.info('Presence baseline locked: variance=%.4f', self._baseline_variance)
 
         recent = self._get_recent(min(self.PRESENCE_WINDOW, self._count))
         if len(recent) < 20:
