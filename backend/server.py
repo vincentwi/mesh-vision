@@ -620,6 +620,7 @@ def send_lxmf_message(content: str, to_hash: Optional[str] = None) -> Dict[str, 
         dest = RNS.Destination(
             dest_identity,
             RNS.Destination.OUT,
+            RNS.Destination.SINGLE,
             "lxmf", "delivery",
         )
 
