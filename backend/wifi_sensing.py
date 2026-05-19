@@ -885,33 +885,41 @@ class EnvironmentMapper:
             self._fingerprint_set = True
             logger.info('Environment baseline fingerprint set: %s', self._fingerprint[:6])
 
-        # Room change detection via AP set Jaccard similarity
-        if self._fingerprint_set and self._scan_count > 5:
-            # Compare current scan against APs seen in the LAST 5 scans (not all-time)
-            # This prevents false positives from the baseline growing unbounded
-            recent_bssids = set()
-            for bssid, ap in self._aps.items():
-                if len(ap['time_history']) > 0:
-                    last_time = ap['time_history'][-1]
-                    # Only include APs seen in the last 90 seconds (~5-6 scans)
-                    if (time.time() - last_time) < 90:
-                        recent_bssids.add(bssid)
+        # Room change detection: compare CONSECUTIVE scans
+        # Previous approach compared current scan (~25 APs) vs 90s window (~90 APs)
+        # which gave Jaccard ~0.25-0.30 even when stationary (subset problem).
+        # Fix: compare current scan's AP set against the PREVIOUS scan's AP set.
+        # Two consecutive scans from the same room see very similar sets (~0.7-0.9).
+        # Moving rooms drops similarity to <0.3 because different APs are visible.
+        if not hasattr(self, '_prev_scan_bssids'):
+            self._prev_scan_bssids = set()
+            self._room_change_count = 0  # consecutive low-similarity scans
 
-            if len(recent_bssids) > 0 and len(seen_bssids) > 0:
-                intersection = len(recent_bssids & seen_bssids)
-                union = len(recent_bssids | seen_bssids)
+        if self._fingerprint_set and self._scan_count > 5 and len(self._prev_scan_bssids) > 0:
+            if len(seen_bssids) > 0:
+                intersection = len(self._prev_scan_bssids & seen_bssids)
+                union = len(self._prev_scan_bssids | seen_bssids)
                 similarity = intersection / max(union, 1)
+
+                # Require 3 consecutive low-similarity scans to confirm room change
+                # (single scan variance is normal — WiFi scans are noisy)
+                if similarity < 0.40:
+                    self._room_change_count += 1
+                else:
+                    self._room_change_count = 0
+
                 was_changed = self._room_changed
-                self._room_changed = similarity < 0.30  # Only flag major room changes
+                self._room_changed = self._room_change_count >= 3
 
                 if self._room_changed and not was_changed:
-                    logger.info('Room change detected (similarity=%.2f, recent=%d, current=%d)',
-                                similarity, len(recent_bssids), len(seen_bssids))
-                    # Reset the baseline to current environment so we don't keep firing
+                    logger.info('Room change confirmed (similarity=%.2f, %d consecutive low scans)',
+                                similarity, self._room_change_count)
                     self._baseline_fingerprint = self._fingerprint
-                elif not self._room_changed and was_changed:
+                    self._room_change_count = 0  # reset counter after confirming
+                elif was_changed and not self._room_changed:
                     logger.info('Room stabilized (similarity=%.2f)', similarity)
-                    self._room_changed = False
+
+        self._prev_scan_bssids = set(seen_bssids)
 
 
 # ---------------------------------------------------------------------------
