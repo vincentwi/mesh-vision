@@ -257,7 +257,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
       <div class="vs-row">
         <span class="vs-icon vs-breathe-anim" id="vs-breathe-icon" style="color:#00d4ff;">⟠</span>
         <span class="vs-value" id="vs-breathe-val">--</span>
-        <span class="vs-label">BPM</span>
+        <span class="vs-label">RESP</span>
         <div class="vs-conf-bar"><div class="vs-conf-fill" id="vs-breathe-conf" style="width:0%;background:#00d4ff;"></div></div>
       </div>
       <div class="vs-row" style="margin-top:2px;">
@@ -316,6 +316,8 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
     <div class="stat" id="heading-stat">HDG:<span class="stat-val" id="s-hdg">---</span>°</div>
     <div class="stat-sep"></div>
     <div class="stat" id="snr-status" style="color:#00d4ff;">SNR:<span class="stat-val" id="s-snr">--</span>dB</div>
+    <div class="stat-sep"></div>
+    <div class="stat" style="color:#ff9f43;">AP:<span class="stat-val" id="s-ap-ssid">--</span></div>
     <div class="stat-sep"></div>
     <div class="stat">Pres:<span class="stat-val" id="s-pres">0</span></div>
     <div class="stat-sep"></div>
@@ -1004,6 +1006,7 @@ function drawMotionHeatmap(ctx) {
 }
 
 // ===== VITAL SIGNS PANEL UPDATE =====
+var _presenceState = { detected: false, lastChange: 0 };
 function updateVitalSignsPanel() {
   var fr = S.sensing.fast_rssi;
   var sp = S.sensing.presence;
@@ -1014,7 +1017,7 @@ function updateVitalSignsPanel() {
   var heartConf = document.getElementById('vs-heart-conf');
   var heartIcon = document.getElementById('vs-heart-icon');
   var hConf = fr.heart_rate.confidence || 0;
-  if (hConf < 0.15) {
+  if (hConf < 0.1) {
     heartEl.textContent = '--';
   } else {
     heartEl.textContent = Math.round(fr.heart_rate.rate_bpm || 0);
@@ -1022,8 +1025,10 @@ function updateVitalSignsPanel() {
   heartConf.style.width = Math.round(hConf * 100) + '%';
   // Adjust heart pulse animation speed
   var heartBpm = fr.heart_rate.rate_bpm || 72;
-  if (heartBpm > 0 && hConf >= 0.15) {
+  if (heartBpm > 0 && hConf >= 0.1) {
     heartIcon.style.animationDuration = (60 / heartBpm) + 's';
+  } else {
+    heartIcon.style.animationPlayState = 'paused';
   }
 
   // Breathing rate
@@ -1031,7 +1036,7 @@ function updateVitalSignsPanel() {
   var breatheConf = document.getElementById('vs-breathe-conf');
   var breatheIcon = document.getElementById('vs-breathe-icon');
   var bConf = fr.breathing.confidence || 0;
-  if (bConf < 0.2) {
+  if (bConf < 0.1) {
     breatheEl.textContent = '--';
   } else {
     breatheEl.textContent = (fr.breathing.rate_bpm || 0).toFixed(1);
@@ -1039,8 +1044,10 @@ function updateVitalSignsPanel() {
   breatheConf.style.width = Math.round(bConf * 100) + '%';
   // Adjust breathing animation speed
   var breathBpm = fr.breathing.rate_bpm || 16;
-  if (breathBpm > 0 && bConf >= 0.2) {
+  if (breathBpm > 0 && bConf >= 0.1) {
     breatheIcon.style.animationDuration = (60 / breathBpm) + 's';
+  } else {
+    breatheIcon.style.animationPlayState = 'paused';
   }
 
   // SNR meter
@@ -1049,12 +1056,19 @@ function updateVitalSignsPanel() {
   var snr = fr.snr || 0;
   var snrPct = Math.max(0, Math.min(100, (snr / 50) * 100));
   snrFill.style.width = snrPct + '%';
-  snrVal.textContent = snr + 'dB';
+  snrVal.textContent = snr + ' dB';
 
-  // Presence / person count
+  // Presence / person count (debounced – 2s cooldown)
   var presEl = document.getElementById('vs-presence');
-  var personCount = sp.person_count || 0;
-  if (fr.presence.detected) {
+  var personCount = Math.max(fr.presence.detected ? 1 : 0, sp.person_count || 0);
+  var _now = Date.now();
+  if (fr.presence.detected !== _presenceState.detected) {
+    if (_now - _presenceState.lastChange > 2000) {
+      _presenceState.detected = fr.presence.detected;
+      _presenceState.lastChange = _now;
+    }
+  }
+  if (_presenceState.detected) {
     presEl.innerHTML = 'ROOM: <span style="color:var(--cyan);font-weight:600;">' + personCount + '</span> person' + (personCount !== 1 ? 's' : '') + ' detected · <span style="color:var(--orange);">' + Math.round(fr.presence.duration_s || 0) + 's</span>';
   } else {
     presEl.innerHTML = 'ROOM: <span style="color:rgba(0,255,65,0.4);">EMPTY</span>';
@@ -1080,6 +1094,12 @@ function updateVitalSignsPanel() {
   // Room hash
   var roomHashEl = document.getElementById('s-room-hash');
   if (roomHashEl) roomHashEl.textContent = 'RM:' + (env.room_fingerprint_hash || '------');
+  // AP SSID from environment strongest_aps
+  var apSsidEl = document.getElementById('s-ap-ssid');
+  if (apSsidEl) {
+    var topAp = (env.strongest_aps && env.strongest_aps.length > 0) ? env.strongest_aps[0] : null;
+    apSsidEl.textContent = topAp ? (topAp.ssid || topAp.bssid || '?').substring(0, 12) : '--';
+  }
 }
 
 // ===== RSSI WAVEFORM DISPLAY =====

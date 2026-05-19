@@ -110,6 +110,19 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
 /* Stats line inside bottom bar */
 #stats-line{position:absolute;bottom:1px;left:0;right:0;text-align:center;
   font-size:9px;color:rgba(0,255,65,0.3);letter-spacing:1px;pointer-events:none;}
+
+/* ═══ VITAL SIGNS ROW ═══ */
+#vitals-row{display:flex;align-items:center;gap:8px;padding:2px 10px;
+  border-bottom:1px solid var(--border);flex-shrink:0;font-size:11px;
+  background:rgba(0,10,0,0.5);min-height:18px;}
+#vitals-row .vt{display:flex;align-items:center;gap:2px;white-space:nowrap;}
+#vitals-row .vt-icon{font-size:12px;}
+#vitals-row .vt-val{font-weight:700;font-size:11px;}
+.vt-hr .vt-val{color:#ff4466;text-shadow:0 0 4px #ff4466;}
+.vt-br .vt-val{color:#44ddff;text-shadow:0 0 4px #44ddff;}
+.vt-motion .vt-val{color:var(--orange);text-shadow:0 0 4px var(--orange);}
+.vt-presence .vt-val{color:var(--purple);text-shadow:0 0 4px var(--purple);font-size:10px;
+  letter-spacing:1px;}
 </style>
 </head>
 <body>
@@ -149,6 +162,12 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;
       <div id="mesh-dot"></div>
       <span id="mesh-status-text">PI MESH: OFFLINE</span>
     </div>
+    <div id="vitals-row">
+      <div class="vt vt-hr"><span class="vt-icon">♥</span> <span class="vt-val" id="vt-bpm">--</span></div>
+      <div class="vt vt-br"><span class="vt-icon">🫁</span> <span class="vt-val" id="vt-br">--</span></div>
+      <div class="vt vt-motion"><span class="vt-icon">⟐</span> <span class="vt-val" id="vt-motion">--</span></div>
+      <div class="vt vt-presence"><span class="vt-val" id="vt-presence">--</span></div>
+    </div>
     <div id="last-msg-bubble">
       <div class="bubble-from">--</div>
       <div class="bubble-text">No messages yet</div>
@@ -175,7 +194,11 @@ const S = {
   allMessages: [],
   sensing: {
     fast_rssi: { current_rssi: -70, noise_floor: -92, snr: 22 },
-    environment: { strongest_aps: [] }
+    environment: { strongest_aps: [] },
+    breathing: { rate: 0, confidence: 0 },
+    heartbeat: { bpm: 0, confidence: 0 },
+    motion: { state: 'unknown' },
+    presence: { detected: false }
   }
 };
 
@@ -206,6 +229,19 @@ function relativeTime(ts) {
   if (diff < 60) return diff + 's';
   if (diff < 3600) return Math.floor(diff / 60) + 'm';
   return Math.floor(diff / 3600) + 'h';
+}
+
+// ===== BASE URL HELPER (Android WebView / file:// support) =====
+function getBackendHost() {
+  return window.MESH_BACKEND_URL
+    || localStorage.getItem('mesh_backend_url')
+    || location.host;
+}
+function getBaseUrl() {
+  const host = getBackendHost();
+  if (host.startsWith('http://') || host.startsWith('https://')) return host;
+  const proto = location.protocol === 'https:' ? 'https://' : 'http://';
+  return proto + host;
 }
 
 // ===== RADAR =====
@@ -462,7 +498,7 @@ function sendChat() {
   if (!content) return;
   chatInput.value = '';
 
-  fetch('/api/send-message', {
+  fetch(getBaseUrl() + '/api/send-message', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content })
@@ -475,7 +511,7 @@ function sendChat() {
   });
 
   // Bridge to Pi MeshChat
-  fetch('/api/mesh-chat', {
+  fetch(getBaseUrl() + '/api/mesh-chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content })
@@ -549,7 +585,7 @@ async function processVoiceAudio() {
     voiceStatusEl.textContent = '⏳ TX...';
     voiceStatusEl.style.display = 'block';
 
-    fetch('/api/voice-chat', {
+    fetch(getBaseUrl() + '/api/voice-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ audio: base64Audio, format: blob.type })
@@ -586,7 +622,7 @@ const meshDot = document.getElementById('mesh-dot');
 const meshStatusText = document.getElementById('mesh-status-text');
 
 function pollMeshStatus() {
-  fetch('/api/mesh-chat/status').then(r => r.json()).then(res => {
+  fetch(getBaseUrl() + '/api/mesh-chat/status').then(r => r.json()).then(res => {
     meshStatusOnline = !!(res.connected || res.online || res.status === 'connected');
     if (meshStatusOnline) {
       meshDot.classList.add('online');
@@ -606,7 +642,7 @@ pollMeshStatus();
 
 // Poll Pi mesh messages
 function pollMeshMessages() {
-  fetch('/api/mesh-chat/messages').then(r => r.json()).then(msgs => {
+  fetch(getBaseUrl() + '/api/mesh-chat/messages').then(r => r.json()).then(msgs => {
     if (!Array.isArray(msgs)) return;
     msgs.forEach(m => {
       if (!S.allMessages.find(x => x.content === m.content && x.from_name === (m.from || m.from_name))) {
@@ -630,10 +666,14 @@ let ws = null;
 let prevMsgCount = 0;
 
 function connectWS() {
-  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    ws.close();
+  }
 
-  const wsProto = location.protocol === 'https:' ? 'wss://' : 'ws://';
-  ws = new WebSocket(wsProto + location.host + '/ws/mesh');
+  const host = getBackendHost();
+  const wsProto = (location.protocol === 'https:' || host.startsWith('https://')) ? 'wss://' : 'ws://';
+  const cleanHost = host.replace(/^https?:\/\//, '');
+  ws = new WebSocket(wsProto + cleanHost + '/ws/mesh');
 
   ws.onopen = () => {
     S.wsConnected = true;
@@ -660,6 +700,10 @@ function connectWS() {
       if (data.sensing) {
         if (data.sensing.fast_rssi) Object.assign(S.sensing.fast_rssi, data.sensing.fast_rssi);
         if (data.sensing.environment) Object.assign(S.sensing.environment, data.sensing.environment);
+        if (data.sensing.breathing) Object.assign(S.sensing.breathing, data.sensing.breathing);
+        if (data.sensing.heartbeat) Object.assign(S.sensing.heartbeat, data.sensing.heartbeat);
+        if (data.sensing.motion) Object.assign(S.sensing.motion, data.sensing.motion);
+        if (data.sensing.presence) Object.assign(S.sensing.presence, data.sensing.presence);
       }
 
       // New messages
@@ -676,6 +720,8 @@ function connectWS() {
 
       // Update top bar
       updateTopBar();
+      // Update vital signs
+      updateVitals();
 
     } catch (e) { console.error('WS parse:', e); }
   };
@@ -717,6 +763,53 @@ function updateTopBar() {
   document.getElementById('wifi-n').textContent = S.wifi.length;
   document.getElementById('ble-n').textContent = S.ble.length;
 }
+
+// ===== VITAL SIGNS UPDATE =====
+function updateVitals() {
+  const hr = S.sensing.heartbeat;
+  const br = S.sensing.breathing;
+  const mo = S.sensing.motion;
+  const pr = S.sensing.presence;
+
+  // Heart rate
+  const bpmEl = document.getElementById('vt-bpm');
+  if (hr && hr.confidence > 0.1 && hr.bpm > 0) {
+    bpmEl.textContent = Math.round(hr.bpm) + ' BPM';
+  } else {
+    bpmEl.textContent = '--';
+  }
+
+  // Breathing rate
+  const brEl = document.getElementById('vt-br');
+  if (br && br.confidence > 0.1 && br.rate > 0) {
+    brEl.textContent = br.rate.toFixed(1) + '/m';
+  } else {
+    brEl.textContent = '--';
+  }
+
+  // Motion
+  const motEl = document.getElementById('vt-motion');
+  if (mo && mo.state && mo.state !== 'unknown') {
+    motEl.textContent = mo.state.toUpperCase();
+  } else {
+    motEl.textContent = '--';
+  }
+
+  // Presence
+  const prEl = document.getElementById('vt-presence');
+  if (pr) {
+    prEl.textContent = pr.detected ? '● DETECTED' : '○ EMPTY';
+    prEl.style.color = pr.detected ? '#bb44ff' : 'rgba(187,68,255,0.4)';
+  } else {
+    prEl.textContent = '--';
+  }
+}
+
+// ===== EXPOSE reconnectWS for Android WebView injection =====
+window.reconnectWS = function() {
+  if (ws) { try { ws.close(); } catch(e){} ws = null; }
+  connectWS();
+};
 
 // ===== ANIMATION LOOP =====
 let lastTime = performance.now();

@@ -179,6 +179,16 @@ env_mapper = None      # type: Optional[EnvironmentMapper]
 presence_est = None    # type: Optional[HumanPresenceEstimator]
 
 # ---------------------------------------------------------------------------
+# WiFi profile tracking — auto-reset baseline on SSID change
+# ---------------------------------------------------------------------------
+WIFI_PROFILES = {
+    "Pi-Star": "work",
+}
+WIFI_DEFAULT_PROFILE = "home"  # any SSID not in WIFI_PROFILES is 'home'
+_last_connected_ssid = None    # type: Optional[str]
+_current_wifi_profile = "unknown"  # type: str
+
+# ---------------------------------------------------------------------------
 # Multi-user shared state
 # ---------------------------------------------------------------------------
 shared_users = {}  # type: Dict[str, Dict[str, Any]]
@@ -993,6 +1003,39 @@ def wifi_scan_loop() -> None:
             else:
                 results = _scan_wifi_system_profiler()
             wifi_results = results
+
+            # --- WiFi profile: detect connected SSID changes ---
+            global _last_connected_ssid, _current_wifi_profile
+            try:
+                if use_corewlan:
+                    import objc
+                    from Foundation import NSBundle
+                    _cw_bundle = NSBundle.bundleWithPath_('/System/Library/Frameworks/CoreWLAN.framework')
+                    _cw_bundle.load()
+                    _CWClient = objc.lookUpClass('CWWiFiClient')
+                    _cw_iface = _CWClient.sharedWiFiClient().interface()
+                    connected_ssid = _cw_iface.ssid() if _cw_iface else None
+                else:
+                    connected_ssid = None
+                if connected_ssid and connected_ssid != _last_connected_ssid:
+                    old_ssid = _last_connected_ssid
+                    _last_connected_ssid = connected_ssid
+                    _current_wifi_profile = WIFI_PROFILES.get(connected_ssid, WIFI_DEFAULT_PROFILE)
+                    if old_ssid is not None:
+                        # SSID actually changed (not first boot) — reset baseline
+                        log.info("[wifi-profile] SSID changed: '%s' -> '%s' (profile: %s) — resetting presence baseline",
+                                 old_ssid, connected_ssid, _current_wifi_profile)
+                        if fast_rssi is not None:
+                            fast_rssi.reset_baseline()
+                    else:
+                        log.info("[wifi-profile] Initial SSID: '%s' (profile: %s)", connected_ssid, _current_wifi_profile)
+                elif connected_ssid is None and _last_connected_ssid is not None:
+                    log.info("[wifi-profile] WiFi disconnected (was '%s')", _last_connected_ssid)
+                    _last_connected_ssid = None
+                    _current_wifi_profile = "unknown"
+            except Exception:
+                log.debug("[wifi-profile] SSID detection error", exc_info=True)
+
             # Record scan for mapping mode if active
             if _mapping_active:
                 with _camera_heading_lock:
@@ -1738,6 +1781,18 @@ async def api_reset_baseline() -> JSONResponse:
         return JSONResponse(content={"error": "FastRssiMonitor not initialised"}, status_code=503)
     fast_rssi.reset_baseline()
     return JSONResponse(content={"status": "ok", "message": "Presence baseline reset. Recalibrating from next 10 seconds of readings."})
+
+
+@app.get("/api/wifi-profile")
+async def api_wifi_profile() -> JSONResponse:
+    """Return current connected SSID, WiFi profile (work/home/unknown), and profile map."""
+    return JSONResponse(content={
+        "ssid": _last_connected_ssid,
+        "profile": _current_wifi_profile,
+        "profiles": WIFI_PROFILES,
+        "default_profile": WIFI_DEFAULT_PROFILE,
+        "timestamp": time.time(),
+    })
 
 
 # ---------------------------------------------------------------------------
