@@ -1408,10 +1408,15 @@ def build_payload() -> Dict[str, Any]:
     if presence_est is not None and fast_rssi is not None and env_mapper is not None:
         try:
             env_state = env_mapper.get_state()
-            # Auto-reset presence baseline when room changes
+            # Auto-reset presence baseline when room changes (with 5-minute cooldown)
             if env_state.get('room_changed', False):
-                fast_rssi.reset_baseline()
-                log.info("[sensing] Room change detected — auto-reset presence baseline")
+                now = time.time()
+                if not hasattr(api_stream_all, '_last_baseline_reset'):
+                    api_stream_all._last_baseline_reset = 0
+                if now - api_stream_all._last_baseline_reset > 300:  # 5 minute cooldown
+                    fast_rssi.reset_baseline()
+                    api_stream_all._last_baseline_reset = now
+                    log.info("[sensing] Room change detected — auto-reset presence baseline")
             presence_est.update(fast_rssi.get_state(), env_state)
         except Exception:
             log.debug("[sensing] presence_est.update error", exc_info=True)
