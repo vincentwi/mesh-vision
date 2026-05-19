@@ -524,16 +524,8 @@ def init_real_mesh() -> bool:
         RNS.Transport.register_announce_handler(LXMFAnnounceHandler())
         log.info("[mesh] LXMF announce handler registered")
 
-        # Pre-seed the Pi as a known peer (we'll update when its announce arrives)
-        with discovered_peers_lock:
-            discovered_peers[PI_LXMF_HASH] = {
-                "name": "Pi-MeshChat",
-                "identity": None,
-                "last_seen": 0,
-                "app_data": None,
-                "hops": -1,
-            }
-        log.info("[mesh] Pre-seeded Pi MeshChat peer: %s", PI_LXMF_HASH[:16])
+        # Do NOT pre-seed peers — only show nodes that are actually discovered
+        # via real Reticulum announces. Showing stale/hardcoded peers is dishonest.
 
         # Send initial announce so peers can discover us
         try:
